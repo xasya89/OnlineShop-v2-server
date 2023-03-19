@@ -14,6 +14,7 @@ namespace OnlineShop2.Database.Models
         public string Inn { get; set; }
         public string? Kpp { get; set; }
         public string Adress { get; set; }
+        public int? LegacyDbNum { get; set; }
 
         public List<Inventory> Inventories { get; set; }
         public List<GoodCurrentBalance> GoodCurrentBalances { get; set; }

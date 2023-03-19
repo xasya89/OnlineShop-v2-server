@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using OnlineShop2.Api.Models.Shop;
 using OnlineShop2.Api.Services;
 using OnlineShop2.Database.Models;
 
@@ -15,6 +16,6 @@ namespace OnlineShop2.Api.Controllers.Shops
         public ShopsController(ShopService service) => _service = service;
 
         [HttpGet]
-        public IEnumerable<Shop> Get() => _service.GetShops();
+        public IEnumerable<ShopResponseModel> Get() => _service.GetShops();
     }
 }

@@ -1,4 +1,6 @@
-﻿using OnlineShop2.Database;
+﻿using OnlineShop2.Api.Extensions;
+using OnlineShop2.Api.Models.Shop;
+using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Services
@@ -11,6 +13,7 @@ namespace OnlineShop2.Api.Services
             _context = context;
         }
 
-        public IEnumerable<Shop> GetShops() => _context.Shops.OrderBy(s => s.Alias);
+        public IEnumerable<ShopResponseModel> GetShops() => 
+            MapperConfigurationExtension.GetMapper().Map<IEnumerable<Shop>, IEnumerable<ShopResponseModel>>(_context.Shops.OrderBy(s => s.Alias));
     }
 }
