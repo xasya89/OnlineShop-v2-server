@@ -29,7 +29,7 @@ namespace OnlineShop2.Api
                 options.AddPolicy(name: MyAllowSpecificOrigins,
                                   policy =>
                                   {
-                                      policy.WithOrigins("http://localhost:3000").AllowCredentials().AllowAnyHeader().AllowAnyMethod();
+                                      policy.WithOrigins("http://172.172.172.46:3000").AllowCredentials().AllowAnyHeader().AllowAnyMethod();
                                   });
             });
 
