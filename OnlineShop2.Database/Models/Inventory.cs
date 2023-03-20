@@ -30,6 +30,7 @@ namespace OnlineShop2.Database.Models
         public string Name { get; set; }
 
         public List<InventoryGood> InventoryGoods { get; set; }
+        public List<InventorySummaryGood> InventorySummaryGoods { get; set; }
     }
 
     public class InventoryGood
@@ -43,5 +44,17 @@ namespace OnlineShop2.Database.Models
         public double CountFact { get; set; } = 0;
         public double CountAppend { get; set; } = 0;
         public decimal Price { get; set; } 
+    }
+
+    public class InventorySummaryGood
+    {
+        public int Id { get; set; }
+        public int InventoryId { get; set; }
+        public Inventory Inventory { get; set; }
+        public int GoodId { get; set; }
+        public Good Good { get; set; }
+        public decimal Price { get; set; } = 0;
+        public decimal CountOld { get; set; } = 0;
+        public decimal CountCurrent { get; set; } = 0;
     }
 }

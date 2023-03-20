@@ -31,8 +31,14 @@ namespace OnlineShop2.Api.Controllers.Inventory
             Ok(await _inventoryService.GetInventory(shopId, id));
 
         [HttpPost("/api/{shopId}/inventory/{id}/addgroup")]
-        public async Task<ActionResult> AddGroup(int id, [FromBody] InventoryAddGroupRequestModel model) =>
+        public async Task<IActionResult> AddGroup(int id, [FromBody] InventoryAddGroupRequestModel model) =>
             Ok(await _inventoryService.AddGroup(id, model));
 
+        [HttpDelete("/api/{shopId}/inventory/{id}")]
+        public async Task<IActionResult> Remove(int shopId, int id)
+        {
+            await _inventoryService.RemoveInventory(shopId, id);
+            return Ok();
+        }
     }
 }

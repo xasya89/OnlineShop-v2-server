@@ -21,6 +21,7 @@ public partial class OnlineShopContext : DbContext
     public DbSet<Inventory> Inventories { get; set; }
     public DbSet<InventoryGroup> InventoryGroups { get; set; }
     public DbSet<InventoryGood> InventoryGoods { get; set; }
+    public DbSet<InventorySummaryGood> InventorySummaryGoods { get; set; }
 
     public OnlineShopContext()
     {

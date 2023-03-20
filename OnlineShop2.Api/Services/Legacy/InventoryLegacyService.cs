@@ -36,6 +36,14 @@ namespace OnlineShop2.Api.Services.Legacy
                 ShopId = shopId
             };
             _context.Inventories.Add(inventory);
+            var curGoods = _context.GoodCurrentBalances.Where(b => b.CurrentCount > 0).AsNoTracking();
+            foreach (var cur in curGoods)
+                _context.Add(new InventorySummaryGood
+                {
+                    Inventory = inventory,
+                    GoodId = cur.GoodId,
+                    CountOld = cur.CurrentCount
+                });
             await _context.SaveChangesAsync();
             return new { id = inventory.Id };
         }
@@ -82,6 +90,17 @@ namespace OnlineShop2.Api.Services.Legacy
                 inventory.InventoryGroups = groups;
             }
             return MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+        }
+
+        public async Task RemoveInventory(int shopid, int id)
+        {
+            var inventory = await _context.Inventories.FirstAsync(i => i.ShopId == shopid & i.Id == id);
+            if (inventory == null)
+                throw new MyServiceException("Инвенторизация не найдена");
+            if (inventory.Status == DocumentStatus.Complited)
+                throw new MyServiceException("Инвенторизация уже подтверждена");
+            _context.Remove(inventory);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<InventoryGroupResponseModel> AddGroup(int id, InventoryAddGroupRequestModel model)

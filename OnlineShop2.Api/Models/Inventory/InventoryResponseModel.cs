@@ -21,5 +21,16 @@ namespace OnlineShop2.Api.Models.Inventory
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public List<InventoryGoodResponseModel> InventoryGoods { get; set; }
+    }
+
+    public class InventoryGoodResponseModel
+    {
+        public int Id { get; set; }
+        public int GoodId { get; set; }
+        private Good Good { get; set; }
+        public string GoodName { get => Good?.Name ?? ""; }
+        public decimal CountCur { get; set; }
+        public decimal Price { get => Good?.Price ?? 0; }
     }
 }
