@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OnlineShop2.Api.Models.Inventory;
 using OnlineShop2.Api.Services.Legacy;
@@ -8,6 +9,7 @@ namespace OnlineShop2.Api.Controllers.Inventory
 {
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize]
     public class InventoryController : ControllerBase
     {
         private readonly SynchLegacyService _service;
@@ -17,6 +19,10 @@ namespace OnlineShop2.Api.Controllers.Inventory
             _service = service;
             _inventoryService = inventoryService;
         }
+
+        [HttpGet("/api/{shopId}/inventory")]
+        public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId)=>
+            await _inventoryService.GetList(shopId);
 
         [HttpPost("/api/{shopId:int}/inventory/legacystart/{shopLegacy}")]
         public async Task<IActionResult> Start(int shopId=1, int shopLegacy=7)
@@ -33,6 +39,11 @@ namespace OnlineShop2.Api.Controllers.Inventory
         [HttpPost("/api/{shopId}/inventory/{id}/addgroup")]
         public async Task<IActionResult> AddGroup(int id, [FromBody] InventoryAddGroupRequestModel model) =>
             Ok(await _inventoryService.AddGroup(id, model));
+
+        [HttpPost("/api/{shopId}/inventory/{id}/goods")]
+        public async Task<IEnumerable<InventoryGoodResponseModel>> AddEditGoods(int id, [FromBody] IEnumerable<InventoryAddGoodRequestModel> model) =>
+            await _inventoryService.AddEditGood(id, model);
+
 
         [HttpDelete("/api/{shopId}/inventory/{id}")]
         public async Task<IActionResult> Remove(int shopId, int id)

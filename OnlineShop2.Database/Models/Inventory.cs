@@ -40,9 +40,9 @@ namespace OnlineShop2.Database.Models
         public InventoryGroup InventoryGroup { get; set; }
         public int GoodId { get; set; }
         public Good Good { get; set; }
-        public double CountDB { get; set; } = 0;
-        public double CountFact { get; set; } = 0;
-        public double CountAppend { get; set; } = 0;
+        public decimal CountDB { get; set; } = 0;
+        public decimal? CountFact { get; set; } 
+        public decimal? CountAppend { get; set; }
         public decimal Price { get; set; } 
     }
 

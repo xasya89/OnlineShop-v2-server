@@ -1,4 +1,5 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Api.Models.Goods;
+using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Models.Inventory
 {
@@ -6,7 +7,9 @@ namespace OnlineShop2.Api.Models.Inventory
     {
         public int Id { get; set; }
         public DateTime Start { get; set; }
+        public string StartStr { get => Start.ToString("dd.MM.yy"); }
         public DateTime? Stop { get; set; }
+        public string StopStr { get => Stop?.ToString("dd.MM.yy") ?? ""; }
         public int ShopId { get; set; }
         public decimal SumDb { get; set; }
         public decimal SumFact { get; set; }
@@ -27,10 +30,12 @@ namespace OnlineShop2.Api.Models.Inventory
     public class InventoryGoodResponseModel
     {
         public int Id { get; set; }
+        public int InventoryGroupId { get; set; }
+        public int GroupId { get => InventoryGroupId; }
         public int GoodId { get; set; }
-        private Good Good { get; set; }
+        public GoodResponseModel? Good { get; set; }
         public string GoodName { get => Good?.Name ?? ""; }
-        public decimal CountCur { get; set; }
+        public decimal? CountFact { get; set; }
         public decimal Price { get => Good?.Price ?? 0; }
     }
 }

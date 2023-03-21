@@ -19,6 +19,11 @@ namespace OnlineShop2.Api.Services.Legacy
             _configuration = configuration;
         }
 
+        public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId) =>
+            MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryResponseModel>>(
+                await _context.Inventories.Where(i=>i.ShopId==shopId).ToListAsync()
+                );
+
         public async Task<dynamic> Start(int shopId, int shopNumLegacy)
         {
             if (_context.Inventories.Where(i => i.Status == DocumentStatus.New || i.Status==DocumentStatus.Successed).Count() > 0)
@@ -89,7 +94,8 @@ namespace OnlineShop2.Api.Services.Legacy
                     .Where(g => g.InventoryId == id).AsNoTracking().ToListAsync();
                 inventory.InventoryGroups = groups;
             }
-            return MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+            var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+            return result;
         }
 
         public async Task RemoveInventory(int shopid, int id)
@@ -112,6 +118,28 @@ namespace OnlineShop2.Api.Services.Legacy
             _context.InventoryGroups.Add(newGroup);
             await _context.SaveChangesAsync();
             return MapperConfigurationExtension.GetMapper().Map<InventoryGroupResponseModel>(newGroup);
+        }
+
+        public async Task<IEnumerable<InventoryGoodResponseModel>> AddEditGood(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
+        {
+            var responseModel = new List<InventoryGood>();
+            foreach (var item in model.Where(m => m.State == InventoryAddGoodRequestState.Add))
+            {
+                var newInventoryGood = new InventoryGood { InventoryGroupId = item.GroupId, GoodId = item.GoodId, CountFact = item.CountFact };
+                responseModel.Add(newInventoryGood);
+                _context.Add(newInventoryGood);
+            }
+            foreach (var item in model.Where(m => m.State == InventoryAddGoodRequestState.Edit))
+            {
+                var inventoryGood = await _context.InventoryGoods.Include(g => g.Good).Where(i => i.Id == item.id).FirstAsync();
+                inventoryGood.CountFact = item.CountFact;
+                responseModel.Add(inventoryGood);
+            }
+            var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
         }
     }
 }

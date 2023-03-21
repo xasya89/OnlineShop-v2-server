@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Database;
@@ -9,6 +10,13 @@ namespace OnlineShop2.Api.Services
     {
         private readonly OnlineShopContext _context;
         public GoodService(OnlineShopContext context) => _context = context;
+
+        public async Task<GoodResponseModel> Get(int shopId, int id)
+        {
+            var response = await _context.Goods.Include(g=>g.GoodPrices.Where(p=>p.ShopId==shopId)).FirstAsync(g=>g.ShopId==shopId & g.Id==id);
+            response.Price = response.GoodPrices.First().Price;
+            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(response);
+        }
 
         public async Task<GoodResponseModel> GetGoodByBarcode (int shopId, string barcodeStr)
         {
@@ -24,5 +32,10 @@ namespace OnlineShop2.Api.Services
             good.Price=good.GoodPrices.Where(p=>p.ShopId==shopId).FirstOrDefault()?.Price ?? good.Price;
             return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
         }
+
+        public async Task<IEnumerable<GoodResponseModel>> Search(string findText) =>
+            MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(
+                _context.Goods.Where(g=>EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
+                );
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OnlineShop2.Database;
@@ -11,9 +12,11 @@ using OnlineShop2.Database;
 namespace OnlineShop2.Database.Migrations
 {
     [DbContext(typeof(OnlineShopContext))]
-    partial class OnlineShopContextModelSnapshot : ModelSnapshot
+    [Migration("20230321100851_change_column_type_InventoryGood")]
+    partial class change_column_type_InventoryGood
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -219,13 +222,13 @@ namespace OnlineShop2.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("CountAppend")
+                    b.Property<decimal>("CountAppend")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("CountDB")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("CountFact")
+                    b.Property<decimal>("CountFact")
                         .HasColumnType("numeric");
 
                     b.Property<int>("GoodId")
