@@ -12,6 +12,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace OnlineShop2.Api
 {
@@ -37,6 +38,7 @@ namespace OnlineShop2.Api
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
             builder.Services.AddDbContext<OnlineShopContext>(option=>
                 option.UseNpgsql(builder.Configuration.GetConnectionString("db"))
             );
@@ -77,6 +79,10 @@ namespace OnlineShop2.Api
             });
             */
             var app = builder.Build();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -109,8 +115,8 @@ namespace OnlineShop2.Api
                         }));
                 });
             });
-
-            app.UseHttpsRedirection();
+            if(app.Environment.IsDevelopment())
+                app.UseHttpsRedirection();
             app.UseCors(MyAllowSpecificOrigins);
 
             app.UseAuthentication();
