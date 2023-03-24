@@ -33,9 +33,12 @@ namespace OnlineShop2.Api.Services
             return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
         }
 
-        public async Task<IEnumerable<GoodResponseModel>> Search(string findText) =>
-            MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(
-                _context.Goods.Where(g=>EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
+        public IEnumerable<GoodResponseModel> Search(string findText)
+        {
+            System.Diagnostics.Debug.WriteLine("findText - " + findText);
+            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(
+                _context.Goods.Where(g => EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
                 );
+        }
     }
 }

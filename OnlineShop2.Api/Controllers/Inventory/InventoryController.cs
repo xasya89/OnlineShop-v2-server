@@ -9,7 +9,7 @@ namespace OnlineShop2.Api.Controllers.Inventory
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class InventoryController : ControllerBase
     {
         private readonly SynchLegacyService _service;
@@ -30,6 +30,13 @@ namespace OnlineShop2.Api.Controllers.Inventory
             await _service.SynchGoods(shopId, shopLegacy);
             var result = await _inventoryService.Start(shopId, shopLegacy);
             return Ok(result);
+        }
+
+        [HttpPost("/api/{shopId:int}/inventory/{id}/complite")]
+        public async Task<IActionResult> Complite(int id, [FromBody] IEnumerable<InventoryAddGoodRequestModel> model)
+        {
+            await _inventoryService.Complite(id, model);
+            return Ok();
         }
 
         [HttpGet("/api/{shopId}/inventory/{id}")]

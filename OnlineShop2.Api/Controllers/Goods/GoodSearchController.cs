@@ -19,6 +19,6 @@ namespace OnlineShop2.Api.Controllers.Goods
 
         [HttpGet]
         public async Task<IEnumerable<GoodResponseModel>> Search([FromQuery] string search) =>
-            await _service.Search(search);
+            _service.Search(search);
     }
 }

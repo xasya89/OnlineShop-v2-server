@@ -41,11 +41,12 @@ namespace OnlineShop2.Api.Services.Legacy
                 ShopId = shopId
             };
             _context.Inventories.Add(inventory);
-            var curGoods = _context.GoodCurrentBalances.Where(b => b.CurrentCount > 0).AsNoTracking();
+            var curGoods = _context.GoodCurrentBalances.Include(b=>b.Good).Where(b => !b.Good.IsDeleted).AsNoTracking();
             foreach (var cur in curGoods)
                 _context.Add(new InventorySummaryGood
                 {
                     Inventory = inventory,
+                    Price = cur.Good.Price,
                     GoodId = cur.GoodId,
                     CountOld = cur.CurrentCount
                 });
@@ -122,6 +123,45 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task<IEnumerable<InventoryGoodResponseModel>> AddEditGood(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
         {
+            var responseModel = await saveChangedGoods(inventoryId, model);
+
+            var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
+        }
+
+        public async Task Complite(int id, IEnumerable<InventoryAddGoodRequestModel> model)
+        {
+            await saveChangedGoods(id, model);
+            var inventory = await _context.Inventories
+                .Include(i=>i.InventoryGroups).ThenInclude(gr=>gr.InventoryGoods)
+                .Where(i=>i.Id==id).FirstAsync();
+            if (inventory.Status == DocumentStatus.Complited)
+                return;
+            inventory.Status = DocumentStatus.Complited;
+            inventory.Stop = DateTime.Now;
+            var goodsCountFactory = inventory.InventoryGroups
+                .SelectMany(gr => gr.InventoryGoods).GroupBy(g => g.GoodId)
+                .Select(g => new { GoodId = g.Key, countFact = g.Sum(g => g.CountFact) });
+            var inventoryBalanceList = await _context.InventorySummaryGoods.Where(i=>i.InventoryId==id).ToListAsync();
+            foreach (var goodCountFactory in goodsCountFactory)
+                inventoryBalanceList.Where(b => b.GoodId == goodCountFactory.GoodId).First().CountCurrent = goodCountFactory.countFact ?? 0;
+
+            var balanceList = await _context.GoodCurrentBalances.ToListAsync();
+            foreach (var balance in balanceList)
+                balance.CurrentCount = goodsCountFactory.Where(g => g.GoodId == balance.GoodId).FirstOrDefault()?.countFact ?? 0;
+
+            inventory.SumDb = inventoryBalanceList.Sum(i => i.CountOld * i.Price);
+            inventory.SumFact = inventoryBalanceList.Sum(i => i.CountCurrent * i.Price);
+            var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        private async Task<IEnumerable<InventoryGood>> saveChangedGoods(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
+        {
             var responseModel = new List<InventoryGood>();
             foreach (var item in model.Where(m => m.State == InventoryAddGoodRequestState.Add))
             {
@@ -135,11 +175,7 @@ namespace OnlineShop2.Api.Services.Legacy
                 inventoryGood.CountFact = item.CountFact;
                 responseModel.Add(inventoryGood);
             }
-            var transaction = await _context.Database.BeginTransactionAsync();
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
+            return responseModel;
         }
     }
 }
