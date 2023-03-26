@@ -18,6 +18,7 @@ namespace OnlineShop2.Api.Extensions
                 cfg.CreateMap<Inventory, InventoryResponseModel>();
                 cfg.CreateMap<InventoryGroup, InventoryGroupResponseModel>();
                 cfg.CreateMap<InventoryGood, InventoryGoodResponseModel>();
+                cfg.CreateMap<InventorySummaryGood, InventorySummaryGoodResponseModel>();
             });
             _instance = config.CreateMapper();
         }

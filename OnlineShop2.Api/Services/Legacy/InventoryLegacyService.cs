@@ -6,6 +6,7 @@ using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb;
 using OnlineShop2.LegacyDb.Models;
 using OnlineShop2.LegacyDb.Repositories;
+using System.Linq.Expressions;
 
 namespace OnlineShop2.Api.Services.Legacy
 {
@@ -87,17 +88,37 @@ namespace OnlineShop2.Api.Services.Legacy
             var inventory = await _context.Inventories.Where(i => i.ShopId == shopId & i.Id == id).FirstOrDefaultAsync();
             if (inventory == null)
                 throw new MyServiceException("Инвертирозация не найдена");
-            if(inventory.Status==DocumentStatus.New || inventory.Status==DocumentStatus.Canceled)
-            {
-                var groups = await _context.InventoryGroups
-                    .Include(g=>g.InventoryGoods)
-                    .ThenInclude(g=>g.Good)
+            if (inventory.Status == DocumentStatus.New)
+                inventory.InventoryGroups = await _context.InventoryGroups
+                    .Include(g => g.InventoryGoods)
+                    .ThenInclude(g => g.Good)
                     .Where(g => g.InventoryId == id).AsNoTracking().ToListAsync();
-                inventory.InventoryGroups = groups;
-            }
+            else
+                inventory.InventorySummaryGoods = await _context.InventorySummaryGoods.Include(s => s.Good)
+                    .Where(s => s.InventoryId == id).ToListAsync();
             var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
             return result;
         }
+
+        public async Task<InventoryResponseModel> GetInventoryComplite(int shopId, int id, string? search, int page, int pageSize, bool isDiff)
+        {
+            var inventory = await _context.Inventories.Where(i => i.ShopId == shopId & i.Id == id).FirstOrDefaultAsync();
+            if (inventory == null)
+                throw new MyServiceException("Инвертирозация не найдена");
+            int total = await _context.InventorySummaryGoods.Where(i => i.InventoryId == id)
+                .Where(s => s.InventoryId == id & (
+                    (isDiff & s.CountCurrent - s.CountOld != 0) || (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) || (!isDiff & string.IsNullOrEmpty(search))
+                )).CountAsync();
+            inventory.InventorySummaryGoods = await _context.InventorySummaryGoods.Include(s => s.Good)
+                .Where(s => s.InventoryId == id & ( 
+                    (isDiff & s.CountCurrent-s.CountOld != 0) || (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) || (!isDiff & string.IsNullOrEmpty(search))
+                ))
+                .Skip((page-1)*pageSize).Take(pageSize).ToListAsync();
+            var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+            result.Total = total;
+            return result;
+        }
+
 
         public async Task RemoveInventory(int shopid, int id)
         {
@@ -115,6 +136,8 @@ namespace OnlineShop2.Api.Services.Legacy
             var inventory = await _context.Inventories.FindAsync(id);
             if (inventory == null)
                 throw new MyServiceException("Инвертирозация не найдена");
+            if(inventory.Status==DocumentStatus.Complited)
+                throw new MyServiceException("Инвертирозация завершена");
             var newGroup = new InventoryGroup { Inventory=inventory, Name= model.Name };
             _context.InventoryGroups.Add(newGroup);
             await _context.SaveChangesAsync();
@@ -123,6 +146,11 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task<IEnumerable<InventoryGoodResponseModel>> AddEditGood(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
         {
+            var inventory = await _context.Inventories.FindAsync(inventoryId);
+            if (inventory == null)
+                throw new MyServiceException("Инвертирозация не найдена");
+            if (inventory.Status == DocumentStatus.Complited)
+                throw new MyServiceException("Инвертирозация завершена");
             var responseModel = await saveChangedGoods(inventoryId, model);
 
             var transaction = await _context.Database.BeginTransactionAsync();

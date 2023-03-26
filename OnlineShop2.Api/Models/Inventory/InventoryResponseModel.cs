@@ -18,6 +18,8 @@ namespace OnlineShop2.Api.Models.Inventory
         public DocumentStatus Status { get; set; }
 
         public List<InventoryGroupResponseModel> InventoryGroups { get; set; }
+        public int Total { get; set; }
+        public List<InventorySummaryGoodResponseModel> InventorySummaryGoods { get; set; }
     }
 
     public class InventoryGroupResponseModel
@@ -37,5 +39,18 @@ namespace OnlineShop2.Api.Models.Inventory
         public string GoodName { get => Good?.Name ?? ""; }
         public decimal? CountFact { get; set; }
         public decimal Price { get => Good?.Price ?? 0; }
+    }
+
+    public class InventorySummaryGoodResponseModel
+    {
+        public int Id { get; set; }
+        public int GoodId { get; set; }
+        public string GoodName { get => Good?.Name ?? ""; }
+        public Good Good { get; set; }
+        public decimal Price { get; set; } = 0;
+        public decimal CountOld { get; set; } = 0;
+        public decimal CountCurrent { get; set; } = 0;
+        public decimal CountDiff { get => CountCurrent - CountOld; }
+        public decimal PriceDiif { get => (CountCurrent - CountOld) * Price; }
     }
 }

@@ -23,7 +23,7 @@ namespace OnlineShop2.Api.Services
             var barcode = await _context.Barcodes
                 .Include(g=>g.Good)
                 .ThenInclude(g=>g.GoodPrices)
-                .Where(b => b.Code == barcodeStr).FirstOrDefaultAsync();
+                .Where(b => b.Code == barcodeStr & !b.Good.IsDeleted).FirstOrDefaultAsync();
             if (barcode == null)
                 throw new MyServiceException("Штрих код не найден");
             var good = barcode.Good;
@@ -37,7 +37,7 @@ namespace OnlineShop2.Api.Services
         {
             System.Diagnostics.Debug.WriteLine("findText - " + findText);
             return MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(
-                _context.Goods.Where(g => EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
+                _context.Goods.Where(g => !g.IsDeleted & EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
                 );
         }
     }

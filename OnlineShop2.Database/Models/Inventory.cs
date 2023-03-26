@@ -20,6 +20,7 @@ namespace OnlineShop2.Database.Models
         public DocumentStatus Status { get; set; } = DocumentStatus.New;
 
         public List<InventoryGroup> InventoryGroups { get; set; }
+        public List<InventorySummaryGood> InventorySummaryGoods { get; set; }
     }
 
     public class InventoryGroup
