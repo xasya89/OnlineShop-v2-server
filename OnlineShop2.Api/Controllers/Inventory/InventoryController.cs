@@ -44,7 +44,7 @@ namespace OnlineShop2.Api.Controllers.Inventory
             Ok(await _inventoryService.GetInventory(shopId, id));
 
         [HttpGet("/api/{shopId}/inventory-view/{id}")]
-        public async Task<InventoryResponseModel> GetInventoryComplite(int shopId, int id, [FromQuery]string? search = "", [FromQuery]int page = 1, [FromQuery] int pageSize = 20, [FromQuery] bool isDiff=false) =>
+        public async Task<InventoryResponseModel> GetInventoryComplite(int shopId, int id, [FromQuery]string? search = "", [FromQuery]int page = 1, [FromQuery] int pageSize = 10000, [FromQuery] bool isDiff=false) =>
             await _inventoryService.GetInventoryComplite(shopId, id, search, page, pageSize, isDiff );
 
         [HttpPost("/api/{shopId}/inventory/{id}/addgroup")]

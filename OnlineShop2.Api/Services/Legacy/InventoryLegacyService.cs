@@ -22,7 +22,7 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId) =>
             MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryResponseModel>>(
-                await _context.Inventories.Where(i=>i.ShopId==shopId).ToListAsync()
+                await _context.Inventories.Where(i=>i.ShopId==shopId).OrderByDescending(i=>i.Start).ToListAsync()
                 );
 
         public async Task<dynamic> Start(int shopId, int shopNumLegacy)
@@ -100,18 +100,24 @@ namespace OnlineShop2.Api.Services.Legacy
             return result;
         }
 
-        public async Task<InventoryResponseModel> GetInventoryComplite(int shopId, int id, string? search, int page, int pageSize, bool isDiff)
+        public async Task<InventoryResponseModel> GetInventoryComplite(int shopId, int id, string? search, int page=0, int pageSize=10000, bool isDiff=true)
         {
             var inventory = await _context.Inventories.Where(i => i.ShopId == shopId & i.Id == id).FirstOrDefaultAsync();
             if (inventory == null)
                 throw new MyServiceException("Инвертирозация не найдена");
             int total = await _context.InventorySummaryGoods.Where(i => i.InventoryId == id)
                 .Where(s => s.InventoryId == id & (
-                    (isDiff & s.CountCurrent - s.CountOld != 0) || (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) || (!isDiff & string.IsNullOrEmpty(search))
+                    (string.IsNullOrEmpty(search) & isDiff & s.CountCurrent - s.CountOld != 0) ||
+                    (!isDiff & !string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) ||
+                    (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%") & isDiff & s.CountCurrent - s.CountOld != 0) ||
+                    (!isDiff & string.IsNullOrEmpty(search))
                 )).CountAsync();
             inventory.InventorySummaryGoods = await _context.InventorySummaryGoods.Include(s => s.Good)
                 .Where(s => s.InventoryId == id & ( 
-                    (isDiff & s.CountCurrent-s.CountOld != 0) || (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) || (!isDiff & string.IsNullOrEmpty(search))
+                    (string.IsNullOrEmpty(search) & isDiff & s.CountCurrent-s.CountOld != 0) || 
+                    (!isDiff & !string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%")) || 
+                    (!string.IsNullOrEmpty(search) & EF.Functions.Like(s.Good.Name, $"%{search}%") & isDiff & s.CountCurrent - s.CountOld != 0) ||
+                    (!isDiff & string.IsNullOrEmpty(search))
                 ))
                 .Skip((page-1)*pageSize).Take(pageSize).ToListAsync();
             var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
