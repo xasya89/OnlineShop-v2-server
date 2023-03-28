@@ -31,7 +31,11 @@ namespace OnlineShop2.LegacyDb
                 return _goodCountCurrentRepository;
             }
         }
-        public UnitOfWorkLegacy(string conStr) => _connection= new MySqlConnection(conStr);
+        public UnitOfWorkLegacy(string conStr)
+        {
+            _connection = new MySqlConnection(conStr);
+            _connection.Open();
+        }
         public void Dispose()
         {
             _connection.Dispose();
