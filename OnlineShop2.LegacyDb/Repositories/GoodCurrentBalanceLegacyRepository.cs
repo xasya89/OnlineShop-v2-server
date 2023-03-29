@@ -24,7 +24,6 @@ namespace OnlineShop2.LegacyDb.Repositories
             var tr = _connection.BeginTransaction();
             foreach (var item in balance)
                 await _connection.ExecuteAsync($"UPDATE goodcountbalancecurrents SET Count={item.CurrentCount} WHERE GoodId={item.GoodId}");
-                
             await _connection.ExecuteAsync("UPDATE goodcountbalancecurrents c INNER JOIN goods g ON c.goodId=g.id SET c.Count=0 WHERE g.IsDeleted=1");
             await tr.CommitAsync();
         }

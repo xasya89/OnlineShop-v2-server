@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OnlineShop2.Api.Models.Inventory;
+using OnlineShop2.Api.Services;
 using OnlineShop2.Api.Services.Legacy;
 using OnlineShop2.Database.Models;
 
@@ -14,21 +15,24 @@ namespace OnlineShop2.Api.Controllers.Inventory
     {
         private readonly SynchLegacyService _service;
         private readonly InventoryLegacyService _inventoryService;
-        public InventoryController(SynchLegacyService service, InventoryLegacyService inventoryService) 
+        private readonly ShopService _shopService;
+        public InventoryController(SynchLegacyService service, InventoryLegacyService inventoryService, ShopService shopService) 
         {
             _service = service;
             _inventoryService = inventoryService;
+            _shopService = shopService;
         }
 
         [HttpGet("/api/{shopId}/inventory")]
         public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId)=>
             await _inventoryService.GetList(shopId);
 
-        [HttpPost("/api/{shopId:int}/inventory/legacystart/{shopLegacy}")]
-        public async Task<IActionResult> Start(int shopId=1, int shopLegacy=7)
+        [HttpPost("/api/{shopId:int}/inventory")]
+        public async Task<IActionResult> Start(int shopId, [FromBody] InventoryStartRequestModel model)
         {
+            int shopLegacy = _shopService.GetShop(shopId).LegacyDbNum ?? 0;
             await _service.SynchGoods(shopId, shopLegacy);
-            var result = await _inventoryService.Start(shopId, shopLegacy);
+            var result = await _inventoryService.Start(shopId, shopLegacy, model);
             return Ok(result);
         }
 

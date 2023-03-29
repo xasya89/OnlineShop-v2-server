@@ -15,5 +15,8 @@ namespace OnlineShop2.Api.Services
 
         public IEnumerable<ShopResponseModel> GetShops() => 
             MapperConfigurationExtension.GetMapper().Map<IEnumerable<Shop>, IEnumerable<ShopResponseModel>>(_context.Shops.OrderBy(s => s.Alias));
+
+        public ShopResponseModel GetShop(int id) =>
+            MapperConfigurationExtension.GetMapper().Map<Shop, ShopResponseModel>(_context.Shops.Find(id));
     }
 }

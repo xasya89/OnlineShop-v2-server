@@ -25,7 +25,7 @@ namespace OnlineShop2.Api.Services.Legacy
                 await _context.Inventories.Where(i=>i.ShopId==shopId).OrderByDescending(i=>i.Start).ToListAsync()
                 );
 
-        public async Task<dynamic> Start(int shopId, int shopNumLegacy)
+        public async Task<dynamic> Start(int shopId, int shopNumLegacy, InventoryStartRequestModel model)
         {
             if (_context.Inventories.Where(i => i.Status == DocumentStatus.New || i.Status==DocumentStatus.Successed).Count() > 0)
                 throw new MyServiceException("Предыдущая инверторизация не завершена");
@@ -39,7 +39,8 @@ namespace OnlineShop2.Api.Services.Legacy
 
             var inventory = new Inventory
             {
-                ShopId = shopId
+                ShopId = shopId,
+                CashMoneyFact= model.CashMoney
             };
             _context.Inventories.Add(inventory);
             var curGoods = _context.GoodCurrentBalances.Include(b=>b.Good).Where(b => !b.Good.IsDeleted).AsNoTracking();
