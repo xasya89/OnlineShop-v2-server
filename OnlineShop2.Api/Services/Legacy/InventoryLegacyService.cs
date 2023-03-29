@@ -174,6 +174,15 @@ namespace OnlineShop2.Api.Services.Legacy
 
             return MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
         }
+        
+        public async Task RemoveGroup(int groupId)
+        {
+            var group = await _context.InventoryGroups.FirstOrDefaultAsync(gr => gr.Id == groupId);
+            if (group==null)
+                throw new MyServiceException($"Группа с id {groupId} не найдена");
+            _context.Remove(group);
+            await _context.SaveChangesAsync();
+        }
 
         public async Task Complite(int id, IEnumerable<InventoryAddGoodRequestModel> model)
         {

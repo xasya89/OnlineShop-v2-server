@@ -24,5 +24,12 @@ namespace OnlineShop2.Api.Controllers.Inventory
         [HttpPut("/api/{shopId}/inventory/{id}/groups/{groupId}")]
         public async Task<InventoryGroupResponseModel> Edit(int groupId, [FromBody] InventoryAddGroupRequestModel model) =>
             await _inventoryService.EditGroup(groupId, model);
+
+        [HttpDelete("/api/{shopId}/inventory/{id}/groups/{groupId}")]
+        public async Task<IActionResult> Remove(int groupId)
+        {
+            await _inventoryService.RemoveGroup(groupId);
+            return Ok();
+        }
     }
 }
