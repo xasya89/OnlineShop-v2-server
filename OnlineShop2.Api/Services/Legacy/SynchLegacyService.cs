@@ -103,16 +103,6 @@ namespace OnlineShop2.Api.Services.Legacy
                                Uuid = goodLegacy.Uuid,
                                LegacyId = goodLegacy.Id
                            };
-            /*
-            foreach (var good in newGoods)
-            {
-                good.ShopId = shopId;
-                foreach (var price in good.GoodPrices)
-                    price.ShopId = shopId;
-                foreach (var barcode in good.Barcodes.Where(b => b.Code == null))
-                    barcode.Code = "1";
-            }
-            */
             _context.Goods.AddRange(newGoods);
             var changeGoods = from goodLegacy in goodsLegacy
                               join good in goods on goodLegacy.Id equals good.LegacyId into t

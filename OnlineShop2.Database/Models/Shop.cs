@@ -18,5 +18,6 @@ namespace OnlineShop2.Database.Models
 
         public List<Inventory> Inventories { get; set; }
         public List<GoodCurrentBalance> GoodCurrentBalances { get; set; }
+        public ICollection<Shift> Shifts { get; set; }
     }
 }

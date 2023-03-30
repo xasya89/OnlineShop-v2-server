@@ -13,6 +13,7 @@ namespace OnlineShop2.LegacyDb
         private MySqlConnection _connection;
         private GoodLegacyRepository _goodRepository;
         private GoodCurrentBalanceLegacyRepository _goodCountCurrentRepository;
+        private ShiftLegacyRepository _shiftLegacyRepository;
         public GoodLegacyRepository GoodRepository
         {
             get
@@ -29,6 +30,15 @@ namespace OnlineShop2.LegacyDb
                 if (_goodCountCurrentRepository == null)
                     _goodCountCurrentRepository = new GoodCurrentBalanceLegacyRepository(_connection);
                 return _goodCountCurrentRepository;
+            }
+        }
+        public ShiftLegacyRepository ShiftLegacyRepository
+        {
+            get
+            {
+                if (_shiftLegacyRepository == null)
+                    _shiftLegacyRepository = new ShiftLegacyRepository(_connection);
+                return _shiftLegacyRepository;
             }
         }
         public UnitOfWorkLegacy(string conStr)

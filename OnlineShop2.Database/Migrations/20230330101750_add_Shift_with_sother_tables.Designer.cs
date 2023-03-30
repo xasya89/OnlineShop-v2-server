@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OnlineShop2.Database;
@@ -11,9 +12,11 @@ using OnlineShop2.Database;
 namespace OnlineShop2.Database.Migrations
 {
     [DbContext(typeof(OnlineShopContext))]
-    partial class OnlineShopContextModelSnapshot : ModelSnapshot
+    [Migration("20230330101750_add_Shift_with_sother_tables")]
+    partial class add_Shift_with_sother_tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,7 +44,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("GoodId");
 
-                    b.ToTable("Barcodes", (string)null);
+                    b.ToTable("Barcodes");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.CheckGood", b =>
@@ -70,7 +73,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("GoodId");
 
-                    b.ToTable("CheckGoods", (string)null);
+                    b.ToTable("CheckGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.CheckSell", b =>
@@ -92,9 +95,6 @@ namespace OnlineShop2.Database.Migrations
 
                     b.Property<DateTime>("DateCreate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("LegacyId")
-                        .HasColumnType("integer");
 
                     b.Property<int>("ShiftId")
                         .HasColumnType("integer");
@@ -118,7 +118,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShiftId");
 
-                    b.ToTable("CheckSells", (string)null);
+                    b.ToTable("CheckSells");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Good", b =>
@@ -176,7 +176,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Goods", (string)null);
+                    b.ToTable("Goods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.GoodCurrentBalance", b =>
@@ -203,7 +203,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("GoodCurrentBalances", (string)null);
+                    b.ToTable("GoodCurrentBalances");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.GoodGroup", b =>
@@ -230,7 +230,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("GoodsGroups", (string)null);
+                    b.ToTable("GoodsGroups");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.GoodPrice", b =>
@@ -256,7 +256,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("GoodPrices", (string)null);
+                    b.ToTable("GoodPrices");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Inventory", b =>
@@ -295,7 +295,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("Inventories", (string)null);
+                    b.ToTable("Inventories");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.InventoryGood", b =>
@@ -330,7 +330,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("InventoryGroupId");
 
-                    b.ToTable("InventoryGoods", (string)null);
+                    b.ToTable("InventoryGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.InventoryGroup", b =>
@@ -352,7 +352,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("InventoryId");
 
-                    b.ToTable("InventoryGroups", (string)null);
+                    b.ToTable("InventoryGroups");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.InventorySummaryGood", b =>
@@ -389,7 +389,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("InventoryId");
 
-                    b.ToTable("InventorySummaryGoods", (string)null);
+                    b.ToTable("InventorySummaryGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.RefreshToken", b =>
@@ -413,7 +413,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Shift", b =>
@@ -426,9 +426,6 @@ namespace OnlineShop2.Database.Migrations
 
                     b.Property<string>("CashierName")
                         .HasColumnType("text");
-
-                    b.Property<int?>("LegacyId")
-                        .HasColumnType("integer");
 
                     b.Property<int>("ShopId")
                         .HasColumnType("integer");
@@ -473,7 +470,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("Shifts", (string)null);
+                    b.ToTable("Shifts");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.ShiftSummary", b =>
@@ -493,9 +490,6 @@ namespace OnlineShop2.Database.Migrations
                     b.Property<int>("GoodId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("LegacyId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("ShiftId")
                         .HasColumnType("integer");
 
@@ -511,7 +505,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShiftId");
 
-                    b.ToTable("ShiftSummaries", (string)null);
+                    b.ToTable("ShiftSummaries");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Shop", b =>
@@ -546,7 +540,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Shops", (string)null);
+                    b.ToTable("Shops");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Supplier", b =>
@@ -573,7 +567,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("Suppliers", (string)null);
+                    b.ToTable("Suppliers");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.User", b =>
@@ -602,7 +596,7 @@ namespace OnlineShop2.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Barcode", b =>
