@@ -39,16 +39,14 @@ namespace OnlineShop2.Api.Services.Legacy
 
             var suppliers = _context.Suppliers;
             var newSuppliers = from supplierLegacy in suppliersLegacy
-                               join supplier in suppliers on supplierLegacy.Id equals supplier.Id into t
+                               join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
                                from subSupplier in t.DefaultIfEmpty()
                                where subSupplier == null
-                               select supplierLegacy;
+                               select new Supplier { Name = supplierLegacy.Name, ShopId = shopId, LegacyId = supplierLegacy.Id };
             _context.Suppliers.AddRange(newSuppliers);
-            foreach (var supplier in newSuppliers)
-                supplier.ShopId = shopId;
 
             var changedSuppliers = from supplierLegacy in suppliersLegacy
-                                   join supplier in suppliers on supplierLegacy.Id equals supplier.Id into t
+                                   join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
                                    from subSupplier in t.DefaultIfEmpty()
                                    where subSupplier != null && subSupplier.Name != supplierLegacy.Name + " "
                                    select new { db = subSupplier, name = supplierLegacy.Name };
@@ -62,16 +60,14 @@ namespace OnlineShop2.Api.Services.Legacy
 
             var goodGroups = _context.GoodsGroups;
             var newGroups = from goodGroupLegacy in goodGroupsLegacy
-                            join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.Id into t
+                            join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId into t
                             from subGroup in t.DefaultIfEmpty()
                             where subGroup == null
-                            select goodGroupLegacy;
-            foreach (var goodGroup in newGroups)
-                goodGroup.ShopId = shopId;
+                            select new GoodGroup { ShopId = shopId, Name = goodGroupLegacy.Name, LegacyId = goodGroupLegacy.Id };
             _context.GoodsGroups.AddRange(newGroups);
 
             var changedGoodGroups = from goodGroupLegacy in goodGroupsLegacy
-                                    join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.Id into t
+                                    join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId into t
                                     from subGroup in t.DefaultIfEmpty()
                                     where subGroup != null && subGroup.Name != goodGroupLegacy.Name
                                     select new { db = subGroup, name = goodGroupLegacy.Name };
@@ -83,12 +79,31 @@ namespace OnlineShop2.Api.Services.Legacy
         {
             var goodsLegacy = await repository.GetGoodsAsync();
 
+            var groups = await _context.GoodsGroups.Where(gr => gr.ShopId == shopId).ToListAsync();
+            var suppliers = await _context.Suppliers.Where(s => s.ShopId == shopId).ToListAsync();
             var goods = _context.Goods.Include(g => g.GoodPrices).Include(g => g.Barcodes);
             var newGoods = from goodLegacy in goodsLegacy
-                           join good in goods on goodLegacy.Id equals good.Id into t
+                           join good in goods on goodLegacy.Id equals good.LegacyId into t
                            from subGood in t.DefaultIfEmpty()
                            where subGood == null
-                           select goodLegacy;
+                           select new Good
+                           {
+                               ShopId = shopId,
+                               Name = goodLegacy.Name,
+                               Article = goodLegacy.Article,
+                               GoodGroup = groups.Where(x => x.LegacyId == goodLegacy.GoodGroupId).First(),
+                               Supplier = suppliers.Where(x => x.LegacyId == goodLegacy.SupplierId).FirstOrDefault(),
+                               Unit = goodLegacy.Unit,
+                               Price = goodLegacy.Price,
+                               GoodPrices=goodLegacy.GoodPrices.Select(p=>new GoodPrice { Price=p.Price, ShopId=shopId}).ToList(),
+                               Barcodes = goodLegacy.Barcodes.Select(b=>new Barcode { Code=b.Code ?? "1" }).ToList(),
+                               SpecialType = goodLegacy.SpecialType,
+                               VPackage = goodLegacy.VPackage,
+                               IsDeleted = goodLegacy.IsDeleted,
+                               Uuid = goodLegacy.Uuid,
+                               LegacyId = goodLegacy.Id
+                           };
+            /*
             foreach (var good in newGoods)
             {
                 good.ShopId = shopId;
@@ -97,9 +112,10 @@ namespace OnlineShop2.Api.Services.Legacy
                 foreach (var barcode in good.Barcodes.Where(b => b.Code == null))
                     barcode.Code = "1";
             }
+            */
             _context.Goods.AddRange(newGoods);
             var changeGoods = from goodLegacy in goodsLegacy
-                              join good in goods on goodLegacy.Id equals good.Id into t
+                              join good in goods on goodLegacy.Id equals good.LegacyId into t
                               from subGood in t.DefaultIfEmpty()
                               where subGood != null && !goodCompare(subGood, goodLegacy)
                               select new

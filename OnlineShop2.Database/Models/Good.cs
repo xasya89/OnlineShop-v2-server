@@ -6,26 +6,34 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace OnlineShop2.Database.Models
 {
+    [Index(nameof(LegacyId))]
     public class GoodGroup
     {
         public int Id { get; set; }
         public int ShopId { get; set; }
         public Shop Shop { get; set; }
         public string Name { get; set; }
+        public int? LegacyId { get; set; }
 
         public List<Good> Goods { get; set; } = new();
     }
+
+    [Index(nameof(LegacyId))]
     public class Supplier
     {
         public int Id { get; set; }
         public int ShopId { get; set; }
         public Shop Shop { get; set; }
         public string Name { get; set; }
+        public int? LegacyId { get; set; }
         public List<Good> Goods { get; set; } = new();
     }
+
+    [Index(nameof(LegacyId))]
     public class Good
     {
         public int Id { get; set; }
@@ -43,6 +51,7 @@ namespace OnlineShop2.Database.Models
         public double? VPackage { get; set; }
         public bool IsDeleted { get; set; } = false;
         public Guid Uuid { get; set; } = Guid.NewGuid();
+        public int? LegacyId { get; set; } = null;
 
         public GoodCurrentBalance? CurrentBalance { get; set; }
 
