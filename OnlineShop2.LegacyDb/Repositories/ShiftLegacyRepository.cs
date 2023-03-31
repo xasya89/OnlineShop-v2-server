@@ -48,10 +48,10 @@ namespace OnlineShop2.LegacyDb.Repositories
             var shiftsLegacy = await GetShifts(with);
             IEnumerable<int?> shiftsLegacyId = Array.ConvertAll(shiftsLegacy.Select(s => s.Id).ToArray(), value=>new int?(value));
             var shifts = await context.Shifts.Include(s=>s.CheckSells).ThenInclude(c=>c.CheckGoods).Include(s=>s.ShiftSummaries)
-                .Where(s=> shiftsLegacyId.Contains(s.LegacyId)).ToListAsync();
+                .Where(s=> shiftsLegacyId.Contains(s.LegacyId)).AsNoTracking().ToListAsync();
             var goodsLegacyId = shiftsLegacy.SelectMany(s => s.CheckSells).SelectMany(c => c.CheckGoods).GroupBy(g=>g.GoodId).Select(c => c.Key);
             IEnumerable<int?> goodsLegacyIdNullable = Array.ConvertAll(goodsLegacyId.ToArray(), val => new int?(val));
-            var goods = await context.Goods.Where(g => goodsLegacyIdNullable.Contains(g.LegacyId)).ToListAsync();
+            var goods = await context.Goods.Where(g => goodsLegacyIdNullable.Contains(g.LegacyId)).AsNoTracking().ToListAsync();
             var newShifts = from legacy in shiftsLegacy
                             join shift in shifts on legacy.Id equals shift.LegacyId into t
                             from sub in t.DefaultIfEmpty()
@@ -80,6 +80,8 @@ namespace OnlineShop2.LegacyDb.Repositories
                                 select new { db = sub, legacy = legacy };
             foreach(var row in editingShifts)
             {
+                context.Entry(row.db).State = EntityState.Unchanged;
+                var prop = context.Entry(row.db).Property(x => x.Start);
                 row.db.Stop = row.legacy.Stop;
                 row.db.SumAll = row.legacy.SumAll;
                 row.db.SumElectron = row.legacy.SumElectron;

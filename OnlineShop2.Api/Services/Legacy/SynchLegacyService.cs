@@ -37,7 +37,7 @@ namespace OnlineShop2.Api.Services.Legacy
         {
             var suppliersLegacy = await repository.GetSuppliersAsync();
 
-            var suppliers = _context.Suppliers;
+            var suppliers = await _context.Suppliers.AsNoTracking().ToListAsync();
             var newSuppliers = from supplierLegacy in suppliersLegacy
                                join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
                                from subSupplier in t.DefaultIfEmpty()
@@ -51,14 +51,18 @@ namespace OnlineShop2.Api.Services.Legacy
                                    where subSupplier != null && subSupplier.Name != supplierLegacy.Name + " "
                                    select new { db = subSupplier, name = supplierLegacy.Name };
             foreach (var changeSupplier in changedSuppliers)
-                changeSupplier.db.Name = changeSupplier.name;
+                {
+                    _context.Entry(changeSupplier.db).State=EntityState.Modified;
+                    changeSupplier.db.Name = changeSupplier.name;
+                }
+
         }
 
         private async Task synchGoodGroups(GoodLegacyRepository repository, int shopId)
         {
             var goodGroupsLegacy = await repository.GetGroupsAsync();
 
-            var goodGroups = _context.GoodsGroups;
+            var goodGroups = await _context.GoodsGroups.AsNoTracking().ToListAsync();
             var newGroups = from goodGroupLegacy in goodGroupsLegacy
                             join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId into t
                             from subGroup in t.DefaultIfEmpty()
@@ -72,16 +76,19 @@ namespace OnlineShop2.Api.Services.Legacy
                                     where subGroup != null && subGroup.Name != goodGroupLegacy.Name
                                     select new { db = subGroup, name = goodGroupLegacy.Name };
             foreach (var changeGroup in changedGoodGroups)
-                changeGroup.db.Name = changeGroup.name;
+                {
+                    _context.Entry(changeGroup.db).State=EntityState.Modified;
+                    changeGroup.db.Name = changeGroup.name;
+                }
         }
 
         private async Task synchGoods(GoodLegacyRepository repository, int shopId)
         {
             var goodsLegacy = await repository.GetGoodsAsync();
 
-            var groups = await _context.GoodsGroups.Where(gr => gr.ShopId == shopId).ToListAsync();
-            var suppliers = await _context.Suppliers.Where(s => s.ShopId == shopId).ToListAsync();
-            var goods = _context.Goods.Include(g => g.GoodPrices).Include(g => g.Barcodes);
+            var groups = await _context.GoodsGroups.Where(gr => gr.ShopId == shopId).AsNoTracking().ToListAsync();
+            var suppliers = await _context.Suppliers.Where(s => s.ShopId == shopId).AsNoTracking().ToListAsync();
+            var goods = await _context.Goods.Include(g => g.GoodPrices).Include(g => g.Barcodes).AsNoTracking().ToListAsync();
             var newGoods = from goodLegacy in goodsLegacy
                            join good in goods on goodLegacy.Id equals good.LegacyId into t
                            from subGood in t.DefaultIfEmpty()
@@ -118,12 +125,17 @@ namespace OnlineShop2.Api.Services.Legacy
                               };
             foreach (var good in changeGoods)
             {
+                _context.Entry(good.db);
+                _context.Entry(good.db).State = EntityState.Modified;
                 good.db.Name = good.name;
                 good.db.Price = good.price;
                 good.db.IsDeleted = good.isDeleted;
                 good.db.VPackage = good.vpackage;
                 foreach (var price in good.db.GoodPrices)
+                {
+                    _context.Entry(price).State=EntityState.Modified;
                     price.Price = good.price;
+                }
             }
 
 

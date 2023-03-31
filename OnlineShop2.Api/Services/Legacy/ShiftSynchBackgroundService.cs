@@ -47,7 +47,8 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _timer = new System.Threading.Timer(DoWork, null, 0, TimeSpan.FromSeconds(180).Milliseconds);
+            int period = 60_000;
+            _timer = new System.Threading.Timer(DoWork, null, 0, period);
 
             return Task.CompletedTask;
         }
