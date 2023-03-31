@@ -41,14 +41,14 @@ namespace OnlineShop2.Api.Services.Legacy
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError("HostedService - ShiftSynch \n" + ex.Message);
             }
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            int period = 60_000;
-            _timer = new System.Threading.Timer(DoWork, null, 0, period);
+            int period = _configuration.GetSection("Cron").GetValue<int>("ShiftSynch");
+            _timer = new Timer(DoWork, null, 0, period);
 
             return Task.CompletedTask;
         }

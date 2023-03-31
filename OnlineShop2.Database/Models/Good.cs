@@ -62,6 +62,7 @@ namespace OnlineShop2.Database.Models
 
         public ICollection<CheckGood> CheckGoods { get; set; }
         public ICollection<ShiftSummary> ShiftSummaries { get; set; }
+        public ICollection<InventoryAppendCheck> InventoryAppendChecks { get; set; }
     }
 
     public class GoodPrice

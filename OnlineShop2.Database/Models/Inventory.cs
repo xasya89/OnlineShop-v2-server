@@ -21,6 +21,7 @@ namespace OnlineShop2.Database.Models
 
         public List<InventoryGroup> InventoryGroups { get; set; }
         public List<InventorySummaryGood> InventorySummaryGoods { get; set; }
+        public List<InventoryAppendCheck> InventoryAppendChecks { get; set; }
     }
 
     public class InventoryGroup
@@ -32,6 +33,7 @@ namespace OnlineShop2.Database.Models
 
         public List<InventoryGood> InventoryGoods { get; set; }
         public List<InventorySummaryGood> InventorySummaryGoods { get; set; }
+        public List<InventoryAppendCheck> InventoryAppendChecks { get; set; }
     }
 
     public class InventoryGood
@@ -57,5 +59,19 @@ namespace OnlineShop2.Database.Models
         public decimal Price { get; set; } = 0;
         public decimal CountOld { get; set; } = 0;
         public decimal CountCurrent { get; set; } = 0;
+    }
+
+    public class InventoryAppendCheck
+    {
+        public int Id { get; set; }
+        public Inventory Inventory { get; set; }
+        public int InventoryId { get; set; }
+        public Shop Shop { get; set; }
+        public int ShopId { get; set; }
+        public CheckSell CheckSell { get; set; }
+        public int CheckSellId { get; set; }
+        public Good Good { get; set; }
+        public int GoodId { get; set; }
+        public decimal Count { get; set; }
     }
 }

@@ -62,6 +62,8 @@ namespace OnlineShop2.Database.Models
         public int? LegacyId { get; set; }
 
         public List<CheckGood> CheckGoods { get; set; } = new();
+
+        public ICollection<InventoryAppendCheck> InventoryAppendChecks { get; set; }
     }
 
     public class CheckGood

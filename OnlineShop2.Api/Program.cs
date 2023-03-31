@@ -49,6 +49,7 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<GoodService>();
 
             builder.Services.AddHostedService<ShiftSynchBackgroundService>();
+            builder.Services.AddHostedService<ControlBuyFromInventoryBackgroundService>();
 
             builder.Services.AddAuthorization();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
