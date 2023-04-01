@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Diagnostics;
 
 namespace OnlineShop2.Api
 {
@@ -20,12 +21,19 @@ namespace OnlineShop2.Api
     {
         public static void Main(string[] args)
         {
+            bool isService = !(Debugger.IsAttached || args.Contains("--console"));
+
             var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddCors(options =>
+            if (isService && OperatingSystem.IsWindows())
+                builder.Host.UseWindowsService();
+            if (isService && OperatingSystem.IsWindows())
+                builder.Host.UseSystemd();
+
+                // Add services to the container.
+                builder.Services.AddCors(options =>
             {
                 options.AddPolicy(name: MyAllowSpecificOrigins,
                                   policy =>

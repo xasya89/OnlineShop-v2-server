@@ -200,7 +200,7 @@ namespace OnlineShop2.Api.Services.Legacy
             var inventoryBalanceList = await _context.InventorySummaryGoods.Where(i => i.InventoryId == id).ToListAsync();
             foreach (var goodCountFactory in goodsCountFactory)
                 inventoryBalanceList.Where(b => b.GoodId == goodCountFactory.GoodId).First().CountCurrent = goodCountFactory.countFact ?? 0;
-
+            //Учитываем чеки которые были проведены за время проведения инвенторизации
             var goodsCheck = await _context.InventoryAppendChecks.Where(i => i.InventoryId == inventory.Id).GroupBy(i => i.GoodId).AsNoTracking()
                 .Select(i => new { GoodId = i.Key, Count = i.Sum(x => x.Count) }).ToListAsync();
             foreach(var goodCheck in goodsCheck)
