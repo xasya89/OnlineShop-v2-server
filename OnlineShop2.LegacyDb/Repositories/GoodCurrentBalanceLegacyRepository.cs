@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using MySql.Data.MySqlClient;
+using Mysqlx.Resultset;
 using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb.Infrastructure.MapperConfigurations;
 using OnlineShop2.LegacyDb.Models;
@@ -16,14 +17,16 @@ namespace OnlineShop2.LegacyDb.Repositories
         private readonly MySqlConnection _connection;
         public GoodCurrentBalanceLegacyRepository(MySqlConnection connection) => _connection = connection;
 
-        public async Task<IEnumerable<GoodCurrentBalance>> GetCurrent() =>
-            MapperInstance.GetMapper().Map<IEnumerable<GoodCountBalanceCurrentLegacy>, IEnumerable<GoodCurrentBalance>>(await _connection.QueryAsync<GoodCountBalanceCurrentLegacy>("SELECT * FROM goodcountbalancecurrents"));
+        public async Task<IEnumerable<GoodCountBalanceCurrentLegacy>> GetCurrent() =>
+            await _connection.QueryAsync<GoodCountBalanceCurrentLegacy>("SELECT * FROM goodcountbalancecurrents");
 
-        public async Task SetCurrent(IEnumerable<GoodCurrentBalance> balance)
+        public async Task SetCurrent(Dictionary<int, decimal> balance)
         {
             var tr = _connection.BeginTransaction();
+            StringBuilder builder = new StringBuilder();
             foreach (var item in balance)
-                await _connection.ExecuteAsync($"UPDATE goodcountbalancecurrents SET Count={item.CurrentCount} WHERE GoodId={item.GoodId}");
+                builder.Append($"{(builder.Length > 0 ? "," : "VALUES")} ROW({item.Key}, '{item.Value}')");
+            await _connection.ExecuteAsync($"UPDATE goodcountbalancecurrents b INNER JOIN ({builder}) t ON b.goodId=t.column_0 SET b.count=t.column_1");
             await _connection.ExecuteAsync("UPDATE goodcountbalancecurrents c INNER JOIN goods g ON c.goodId=g.id SET c.Count=0 WHERE g.IsDeleted=1");
             await tr.CommitAsync();
         }

@@ -59,27 +59,32 @@ namespace OnlineShop2.Api.Services.Legacy
         private async Task synchBalance(GoodCurrentBalanceLegacyRepository repository, int shopId)
         {
             var legacy = await repository.GetCurrent();
-            var rowsAdd = from balanceLegacy in legacy
-                         join balance in  _context.GoodCurrentBalances.Where(b=>b.ShopId==shopId)
-                         on balanceLegacy.GoodId equals balance.GoodId into t
-                         from subBalance in t.DefaultIfEmpty()
-                         where subBalance==null
-                         select balanceLegacy;
-            foreach (var row in rowsAdd)
-            {
-                row.Id = 0;
-                row.ShopId = shopId;
-            }
+            var goods = await _context.Goods.AsNoTracking().ToListAsync();
+            var balanceCurrent = await _context.GoodCurrentBalances.Include(b => b.Good).Where(b => b.ShopId == shopId).AsNoTracking().ToListAsync();
+            var rowsAdd = from good in goods
+                          join balanceLegacy in (
+                             from balanceLegacy in legacy
+                             join balance in balanceCurrent
+                             on balanceLegacy.GoodId equals balance.Good.LegacyId into t
+                             from subBalance in t.DefaultIfEmpty()
+                             where subBalance == null
+                             select balanceLegacy)
+                         on good.LegacyId equals balanceLegacy.GoodId
+                          select new GoodCurrentBalance { ShopId = shopId, GoodId = good.Id, CurrentCount = balanceLegacy.CurrentCount };
             await _context.GoodCurrentBalances.AddRangeAsync(rowsAdd);
-            
+
+
             var rowsEdit = from balanceLegacy in legacy
-                           join balance in _context.GoodCurrentBalances.Where(b=>b.ShopId==shopId)
-                           on balanceLegacy.GoodId equals balance.GoodId into t
+                           join balance in balanceCurrent
+                           on balanceLegacy.GoodId equals balance.Good.LegacyId into t
                            from subBalance in t.DefaultIfEmpty()
-                           where subBalance != null
+                           where subBalance != null && balanceLegacy.Count != subBalance?.CurrentCount
                            select new { db = subBalance, count = balanceLegacy.CurrentCount };
             foreach (var row in rowsEdit)
+            {
+                _context.Entry(row.db).State = EntityState.Modified;
                 row.db.CurrentCount = row.count;
+            }
 
             await _context.SaveChangesAsync();
         }
@@ -205,13 +210,14 @@ namespace OnlineShop2.Api.Services.Legacy
                 .Select(i => new { GoodId = i.Key, Count = i.Sum(x => x.Count) }).ToListAsync();
             foreach(var goodCheck in goodsCheck)
                 inventoryBalanceList.Where(b => b.GoodId == goodCheck.GoodId).First().CountCurrent = goodCheck.Count;
-
-            var balanceList = await _context.GoodCurrentBalances.ToListAsync();
+            //Установим текущие остатки в бд
+            var balanceList = await _context.GoodCurrentBalances.Include(b=>b.Good).AsNoTracking().ToListAsync();
             foreach (var balance in balanceList)
                 balance.CurrentCount = goodsCountFactory.Where(g => g.GoodId == balance.GoodId).FirstOrDefault()?.countFact ?? 0;
 
             inventory.SumDb = inventoryBalanceList.Sum(i => i.CountOld * i.Price);
             inventory.SumFact = inventoryBalanceList.Sum(i => i.CountCurrent * i.Price);
+
             var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -219,7 +225,11 @@ namespace OnlineShop2.Api.Services.Legacy
                 var shop = await _context.Shops.FindAsync(inventory.ShopId);
                 var balanceNotZero = balanceList.Where(b => b.CurrentCount != 0).ToList();
                 using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
-                    await unitOfWOrkLegacy.GoodCountCurrentRepository.SetCurrent(balanceList);
+                {
+                    var setLegacyBalance = balanceList.GroupBy(b => b.Good.LegacyId).Select(b => new { goodLegacyId = b.Key ?? 0, count = b.Sum(x => x.CurrentCount) }).ToDictionary(x=>x.goodLegacyId, x=>x.count);
+                    await unitOfWOrkLegacy.GoodCountCurrentRepository.SetCurrent(setLegacyBalance);
+                }
+                    
                 await transaction.CommitAsync();
 
             }
