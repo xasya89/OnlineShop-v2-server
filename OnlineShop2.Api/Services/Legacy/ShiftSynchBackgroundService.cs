@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using OnlineShop2.Database;
+using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb;
 using System.Threading;
 
@@ -24,7 +25,6 @@ namespace OnlineShop2.Api.Services.Legacy
         {
             using var scope = _service.CreateScope();
             var synchService = scope.ServiceProvider.GetRequiredService<SynchLegacyService>();
-            
             using var context = scope.ServiceProvider.GetRequiredService<OnlineShopContext>();
             try
             {
@@ -41,7 +41,7 @@ namespace OnlineShop2.Api.Services.Legacy
             }
             catch (Exception ex)
             {
-                _logger.LogError("HostedService - ShiftSynch \n" + ex.Message);
+                _logger.LogError("HostedService - ShiftSynch \n" + ex.Message+"\n\n"+ex.StackTrace);
             }
         }
 

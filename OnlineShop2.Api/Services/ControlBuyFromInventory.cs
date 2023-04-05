@@ -10,12 +10,14 @@ namespace OnlineShop2.Api.Services
         private readonly ILogger<ControlBuyFromInventoryBackgroundService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IServiceProvider _service;
+        private readonly string inventoryShema;
         private Timer? _timer = null;
         public ControlBuyFromInventoryBackgroundService(ILogger<ControlBuyFromInventoryBackgroundService> logger, IServiceProvider service, IConfiguration configuration)
         {
             _logger = logger;
             _service = service;
             _configuration = configuration;
+            inventoryShema = configuration.GetSection("InventoryShema").Value;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -42,17 +44,30 @@ namespace OnlineShop2.Api.Services
                     var goodsInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
                         .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
                         .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId);
-
-                    context.InventoryAppendChecks.AddRange(
-                        checks.SelectMany(c => c.CheckGoods).Select(c =>
-                        new InventoryAppendCheck
-                        {
-                            InventoryId = inventory.Id,
-                            ShopId = inventory.ShopId,
-                            CheckSellId = c.CheckSellId,
-                            GoodId = c.GoodId,
-                            Count = (goodsInInventory.Where(g => g.Key == c.GoodId).FirstOrDefault() == null ? 1 : -1) * c.Count
-                        }));
+                    if (inventoryShema == "CurrentBalanceOnStart")
+                        context.InventoryAppendChecks.AddRange(
+                            checks.SelectMany(c => c.CheckGoods).Select(c =>
+                            new InventoryAppendCheck
+                            {
+                                InventoryId = inventory.Id,
+                                ShopId = inventory.ShopId,
+                                CheckSellId = c.CheckSellId,
+                                GoodId = c.GoodId,
+                                Count = (goodsInInventory.Where(g => g.Key == c.GoodId).FirstOrDefault() == null ? 1 : -1) * c.Count
+                            }));
+                    if (inventoryShema == "GetBalanceAfterCloseShift")
+                        context.InventoryAppendChecks.AddRange(
+                            checks.SelectMany(c => c.CheckGoods)
+                            .Where(c => goodsInInventory.Where(g => g.Key == c.GoodId).FirstOrDefault() != null)
+                            .Select(c =>
+                            new InventoryAppendCheck
+                            {
+                                InventoryId = inventory.Id,
+                                ShopId = inventory.ShopId,
+                                CheckSellId = c.CheckSellId,
+                                GoodId = c.GoodId,
+                                Count = c.Count
+                            }));
                 };
                 await context.SaveChangesAsync();
             }

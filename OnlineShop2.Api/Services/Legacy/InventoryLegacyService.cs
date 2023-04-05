@@ -27,31 +27,40 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task<dynamic> Start(int shopId, int shopNumLegacy, InventoryStartRequestModel model)
         {
-            if (_context.Inventories.Where(i => i.Status == DocumentStatus.New || i.Status==DocumentStatus.Successed).Count() > 0)
+            if (_context.Inventories.Where(i => i.Status == DocumentStatus.New || i.Status == DocumentStatus.Successed).Count() > 0)
                 throw new MyServiceException("Предыдущая инверторизация не завершена");
-            using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shopNumLegacy)))
-            {
-                var repository = unitOfWOrkLegacy.GoodCountCurrentRepository;
-                if (!(await repository.ShiftClosedStatus()))
-                    throw new MyServiceException("Есть не закрытая смена");
-                await synchBalance(repository, shopId);;
-            }
+            var currentDate = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
+            var shift = await _context.Shifts.Where(s => s.Start > currentDate & s.Start < currentDate.AddDays(1) & s.Stop == null).FirstOrDefaultAsync();
 
             var inventory = new Inventory
             {
                 ShopId = shopId,
-                CashMoneyFact= model.CashMoney
+                CashMoneyFact = model.CashMoney
             };
             _context.Inventories.Add(inventory);
-            var curGoods = _context.GoodCurrentBalances.Include(b=>b.Good).Where(b => !b.Good.IsDeleted).AsNoTracking();
-            foreach (var cur in curGoods)
-                _context.Add(new InventorySummaryGood
+
+            //Расчет остатков на начало инвенторизации
+            if (_configuration.GetSection("InventoryShema").Value == "CurrentBalanceOnStart")
+            {
+                if (shift != null)
+                    throw new MyServiceException("Есть не закрытая смена");
+                using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shopNumLegacy)))
                 {
-                    Inventory = inventory,
-                    Price = cur.Good.Price,
-                    GoodId = cur.GoodId,
-                    CountOld = cur.CurrentCount
-                });
+                    var repository = unitOfWOrkLegacy.GoodCountCurrentRepository;
+                    await synchBalance(repository, shopId); ;
+                }
+                var curGoods = _context.GoodCurrentBalances.Include(b => b.Good).Where(b => !b.Good.IsDeleted).AsNoTracking();
+                foreach (var cur in curGoods)
+                    _context.Add(new InventorySummaryGood
+                    {
+                        Inventory = inventory,
+                        Price = cur.Good.Price,
+                        GoodId = cur.GoodId,
+                        CountOld = cur.CurrentCount
+                    });
+            }
+            if (_configuration.GetSection("InventoryShema").Value == "GetBalanceAfterCloseShift" && shift == null)
+                throw new MyServiceException("Нет открытой смены");
             await _context.SaveChangesAsync();
             return new { id = inventory.Id };
         }

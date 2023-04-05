@@ -101,7 +101,7 @@ namespace OnlineShop2.LegacyDb.Repositories
                             where sub == null
                             select new CheckSell
                             {
-                                Shift = shifts.Where(s => s.LegacyId == legacy.ShiftId).First(),
+                                Shift = shifts.Where(s => s.LegacyId == legacy.ShiftId).FirstOrDefault() ?? newShifts.Where(s=>s.LegacyId==legacy.ShiftId).First(),
                                 DateCreate = legacy.DateCreate,
                                 TypeSell = legacy.TypeSell,
                                 SumBuy = legacy.SumAll,
@@ -110,7 +110,7 @@ namespace OnlineShop2.LegacyDb.Repositories
                                 SumNoElectron = legacy.SumCash,
                                 CheckGoods = legacy.CheckGoods.Select(c => new CheckGood
                                 {
-                                    Good = goods.Where(g => g.LegacyId == c.GoodId).First(),
+                                    GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
                                     Count = c.Count,
                                     Price = c.Price
                                 }).ToList()

@@ -53,7 +53,7 @@ namespace OnlineShop2.Database.Models
         public Guid Uuid { get; set; } = Guid.NewGuid();
         public int? LegacyId { get; set; } = null;
 
-        public GoodCurrentBalance? CurrentBalance { get; set; }
+        public ICollection<GoodCurrentBalance> CurrentBalances { get; set; }
 
         public List<GoodPrice> GoodPrices { get; set; } = new();
         public List<Barcode> Barcodes { get; set; } = new();

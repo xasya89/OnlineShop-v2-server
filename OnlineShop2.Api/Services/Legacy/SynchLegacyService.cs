@@ -19,15 +19,17 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task SynchGoods(int shopId, int shopNumLegacy)
         {
+            string connstr = _configuration.GetConnectionString("shop" + shopNumLegacy);
             using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shopNumLegacy)))
             {
                 var repository = unitOfWOrkLegacy.GoodRepository;
 
                 await synchSuppliers(repository, shopId);
+                //await _context.SaveChangesAsync();
                 await synchGoodGroups(repository, shopId);
+                //await _context.SaveChangesAsync();
                 await synchGoods(repository, shopId);
-
-                await _context.SaveChangesAsync();
+                //await _context.SaveChangesAsync();
 
             }
             normalizeSequence();
@@ -48,7 +50,7 @@ namespace OnlineShop2.Api.Services.Legacy
             var changedSuppliers = from supplierLegacy in suppliersLegacy
                                    join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
                                    from subSupplier in t.DefaultIfEmpty()
-                                   where subSupplier != null && subSupplier.Name != supplierLegacy.Name + " "
+                                   where subSupplier != null && subSupplier.Name != supplierLegacy.Name
                                    select new { db = subSupplier, name = supplierLegacy.Name };
             foreach (var changeSupplier in changedSuppliers)
                 {
@@ -98,17 +100,18 @@ namespace OnlineShop2.Api.Services.Legacy
                                ShopId = shopId,
                                Name = goodLegacy.Name,
                                Article = goodLegacy.Article,
-                               GoodGroup = groups.Where(x => x.LegacyId == goodLegacy.GoodGroupId).First(),
-                               Supplier = suppliers.Where(x => x.LegacyId == goodLegacy.SupplierId).FirstOrDefault(),
+                               GoodGroupId = groups.Where(x => x.LegacyId == goodLegacy.GoodGroupId).First().Id,
+                               SupplierId = suppliers.Where(x => x.LegacyId == goodLegacy.SupplierId).FirstOrDefault()?.Id,
                                Unit = goodLegacy.Unit,
                                Price = goodLegacy.Price,
-                               GoodPrices=goodLegacy.GoodPrices.Select(p=>new GoodPrice { Price=p.Price, ShopId=shopId}).ToList(),
+                               GoodPrices= goodLegacy.GoodPrices.Select(p=>new GoodPrice { Price=p.Price, ShopId=shopId}).ToList(),
                                Barcodes = goodLegacy.Barcodes.Select(b=>new Barcode { Code=b.Code ?? "1" }).ToList(),
                                SpecialType = goodLegacy.SpecialType,
                                VPackage = goodLegacy.VPackage,
                                IsDeleted = goodLegacy.IsDeleted,
                                Uuid = goodLegacy.Uuid,
-                               LegacyId = goodLegacy.Id
+                               LegacyId = goodLegacy.Id,
+                               CurrentBalances = _context.Shops.Select(s=>new GoodCurrentBalance {ShopId=s.Id }).ToList()
                            };
             _context.Goods.AddRange(newGoods);
             var changeGoods = from goodLegacy in goodsLegacy
