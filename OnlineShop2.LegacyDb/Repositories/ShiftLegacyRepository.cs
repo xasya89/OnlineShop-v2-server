@@ -49,9 +49,11 @@ namespace OnlineShop2.LegacyDb.Repositories
             IEnumerable<int?> shiftsLegacyId = Array.ConvertAll(shiftsLegacy.Select(s => s.Id).ToArray(), value=>new int?(value));
             var shifts = await context.Shifts.Include(s=>s.CheckSells).ThenInclude(c=>c.CheckGoods).Include(s=>s.ShiftSummaries)
                 .Where(s=> shiftsLegacyId.Contains(s.LegacyId)).AsNoTracking().ToListAsync();
+            //Получаем список товаров в чеках 
             var goodsLegacyId = shiftsLegacy.SelectMany(s => s.CheckSells).SelectMany(c => c.CheckGoods).GroupBy(g=>g.GoodId).Select(c => c.Key);
             IEnumerable<int?> goodsLegacyIdNullable = Array.ConvertAll(goodsLegacyId.ToArray(), val => new int?(val));
             var goods = await context.Goods.Where(g => goodsLegacyIdNullable.Contains(g.LegacyId)).AsNoTracking().ToListAsync();
+
             var newShifts = from legacy in shiftsLegacy
                             join shift in shifts on legacy.Id equals shift.LegacyId into t
                             from sub in t.DefaultIfEmpty()
@@ -69,7 +71,23 @@ namespace OnlineShop2.LegacyDb.Repositories
                                 SumDiscount=legacy.SumDiscount,
                                 SumReturnNoElectron=legacy.SumReturnNoElectron,
                                 SumReturnElectron=legacy.SumReturnElectron,
-                                LegacyId=legacy.Id
+                                LegacyId=legacy.Id,
+                                CheckSells = legacy.CheckSells.Select(c=> new CheckSell
+                                {
+                                    DateCreate = c.DateCreate,
+                                    TypeSell = c.TypeSell,
+                                    SumBuy = legacy.SumAll,
+                                    SumDiscont = c.SumDiscont,
+                                    SumElectron = c.SumElectron,
+                                    SumNoElectron = c.SumCash,
+                                    LegacyId = c.Id,
+                                    CheckGoods = c.CheckGoods.Select(c=>new CheckGood
+                                    {
+                                        GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
+                                        Count = c.Count,
+                                        Price = c.Price
+                                    }).ToList()
+                                }).ToList()
                             };
             context.AddRange(newShifts);
 
@@ -93,7 +111,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             }
 
             //Получим новые чеки
-            var checksLegacy = shiftsLegacy.SelectMany(s => s.CheckSells);
+            var checksLegacy = shiftsLegacy.Where(s=>!newShifts.Any(x=>x.LegacyId==s.Id)).SelectMany(s => s.CheckSells);
             var checks = shifts.SelectMany(s => s.CheckSells).ToList();
             var newChecks = from legacy in checksLegacy
                             join check in checks on legacy.Id equals check.LegacyId into t
@@ -113,7 +131,8 @@ namespace OnlineShop2.LegacyDb.Repositories
                                     GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
                                     Count = c.Count,
                                     Price = c.Price
-                                }).ToList()
+                                }).ToList(),
+                                LegacyId = legacy.Id
                             };
             context.AddRange(newChecks);
         }

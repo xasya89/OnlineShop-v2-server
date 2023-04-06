@@ -25,12 +25,9 @@ namespace OnlineShop2.Api.Services.Legacy
                 var repository = unitOfWOrkLegacy.GoodRepository;
 
                 await synchSuppliers(repository, shopId);
-                //await _context.SaveChangesAsync();
                 await synchGoodGroups(repository, shopId);
-                //await _context.SaveChangesAsync();
                 await synchGoods(repository, shopId);
-                //await _context.SaveChangesAsync();
-
+                await _context.SaveChangesAsync();
             }
             normalizeSequence();
         }
