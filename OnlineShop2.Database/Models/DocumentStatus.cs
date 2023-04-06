@@ -8,6 +8,6 @@ namespace OnlineShop2.Database.Models
 {
     public enum DocumentStatus
     {
-        New, Complited, Successed, Canceled
+        New, Complited, Successed, Canceled, Processing
     }
 }

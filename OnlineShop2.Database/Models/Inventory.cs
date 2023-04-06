@@ -13,11 +13,12 @@ namespace OnlineShop2.Database.Models
         public DateTime? Stop { get; set; }
         public int ShopId { get; set; }
         public Shop Shop { get; set; }
-        public decimal SumDb { get; set; } = 0;
+        public decimal? SumDb { get; set; } = 0;
         public decimal SumFact { get; set; } = 0;
-        public decimal CashMoneyFact { get; set; } = 0;
+        public decimal? CashMoneyFact { get; set; } = 0;
         public decimal CashMoneyDb { get; set; } = 0;
         public DocumentStatus Status { get; set; } = DocumentStatus.New;
+        public int? CurrentShiftId { get; set; }
 
         public List<InventoryGroup> InventoryGroups { get; set; }
         public List<InventorySummaryGood> InventorySummaryGoods { get; set; }

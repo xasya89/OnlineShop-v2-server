@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Inventory;
 using OnlineShop2.Database;
@@ -14,10 +15,15 @@ namespace OnlineShop2.Api.Services.Legacy
     {
         private readonly OnlineShopContext _context;
         private readonly IConfiguration _configuration;
+        private string inventoryShema = "";
+
+        private static string INVENTORY_SHEMA_COUNT_ON_START = "CurrentBalanceOnStart";
+        private static string INVENTORY_SHEMA_AFTER_CLOSE = "GetBalanceAfterCloseShift";
         public InventoryLegacyService(OnlineShopContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
+            inventoryShema = configuration.GetSection("InventoryShema").Value;
         }
 
         public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId) =>
@@ -27,15 +33,17 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task<dynamic> Start(int shopId, int shopNumLegacy, InventoryStartRequestModel model)
         {
-            if (_context.Inventories.Where(i => i.Status == DocumentStatus.New || i.Status == DocumentStatus.Successed).Count() > 0)
+            if (_context.Inventories.Where(i => i.Status != DocumentStatus.Canceled & i.Status != DocumentStatus.Successed).Count() > 0)
                 throw new MyServiceException("Предыдущая инверторизация не завершена");
             var currentDate = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
             var shift = await _context.Shifts.Where(s => s.Start > currentDate & s.Start < currentDate.AddDays(1) & s.Stop == null).FirstOrDefaultAsync();
-
+            if (shift == null)
+                throw new MyServiceException("Смена на сеогдняшний день не найдена");
             var inventory = new Inventory
             {
                 ShopId = shopId,
-                CashMoneyFact = model.CashMoney
+                CashMoneyFact = model.CashMoney,
+                CurrentShiftId=shift.Id
             };
             _context.Inventories.Add(inventory);
 
@@ -59,8 +67,12 @@ namespace OnlineShop2.Api.Services.Legacy
                         CountOld = cur.CurrentCount
                     });
             }
-            if (_configuration.GetSection("InventoryShema").Value == "GetBalanceAfterCloseShift" && shift == null)
-                throw new MyServiceException("Нет открытой смены");
+            if (_configuration.GetSection("InventoryShema").Value == "GetBalanceAfterCloseShift")
+            {
+                if(shift==null)
+                    throw new MyServiceException("Нет открытой смены");
+                inventory.CashMoneyFact = null;
+            }
             await _context.SaveChangesAsync();
             return new { id = inventory.Id };
         }
@@ -201,6 +213,12 @@ namespace OnlineShop2.Api.Services.Legacy
         public async Task Complite(int id, IEnumerable<InventoryAddGoodRequestModel> model)
         {
             await saveChangedGoods(id, model);
+            var inventory = await _context.Inventories.Where(i => i.Id == id).FirstAsync();
+            if (inventoryShema == INVENTORY_SHEMA_AFTER_CLOSE)
+                inventory.Status = DocumentStatus.Processing;
+            await _context.SaveChangesAsync();
+
+            /*
             var inventory = await _context.Inventories
                 .Include(i => i.InventoryGroups).ThenInclude(gr => gr.InventoryGoods)
                 .Where(i => i.Id == id).FirstAsync();
@@ -247,6 +265,19 @@ namespace OnlineShop2.Api.Services.Legacy
                 await transaction.RollbackAsync();
                 throw new Exception(e.Message);
             }
+            */
+        }
+
+        public async Task CompliteSetMoneyFact(int id, InventoryStartRequestModel model)
+        {
+            if (inventoryShema == INVENTORY_SHEMA_COUNT_ON_START)
+                throw new MyServiceException("Инвенторизация идет по обычной схеме");
+            var inventory = await _context.Inventories.Where(i => i.Id == id).FirstAsync();
+            if(inventory.Status==DocumentStatus.Processing)
+                throw new MyServiceException("В инвенторизации не получен отчет о закрытии смены");
+            inventory.CashMoneyFact = model.CashMoney;
+            inventory.Status = DocumentStatus.Successed;
+            await _context.SaveChangesAsync();
         }
 
         private async Task<IEnumerable<InventoryGood>> saveChangedGoods(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)

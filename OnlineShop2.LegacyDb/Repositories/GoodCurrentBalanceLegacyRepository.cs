@@ -25,7 +25,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             var tr = _connection.BeginTransaction();
             StringBuilder builder = new StringBuilder();
             foreach (var item in balance)
-                builder.Append($"{(builder.Length > 0 ? "," : "VALUES")} ROW({item.Key}, '{item.Value}')");
+                builder.Append($"{(builder.Length > 0 ? "," : "VALUES")} ROW({item.Key}, {item.Value})");
             await _connection.ExecuteAsync($"UPDATE goodcountbalancecurrents b INNER JOIN ({builder}) t ON b.goodId=t.column_0 SET b.count=t.column_1");
             await _connection.ExecuteAsync("UPDATE goodcountbalancecurrents c INNER JOIN goods g ON c.goodId=g.id SET c.Count=0 WHERE g.IsDeleted=1");
             await tr.CommitAsync();

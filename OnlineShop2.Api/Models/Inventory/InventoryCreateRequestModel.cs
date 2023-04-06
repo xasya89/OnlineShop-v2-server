@@ -2,6 +2,6 @@
 {
     public class InventoryStartRequestModel
     {
-        public decimal CashMoney { get; set; }
+        public decimal? CashMoney { get; set; }
     }
 }

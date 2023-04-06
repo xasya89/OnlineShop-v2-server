@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb;
 using System.Threading;
 
 namespace OnlineShop2.Api.Services
@@ -33,41 +34,16 @@ namespace OnlineShop2.Api.Services
             {
                 using var scope = _service.CreateScope();
                 using var context = scope.ServiceProvider.GetRequiredService<OnlineShopContext>();
-                var inventories = await context.Inventories.Include(i => i.InventoryAppendChecks).Where(i => i.Stop == null).AsNoTracking().ToListAsync();
-                var inventoryAppendedChecksId = inventories.SelectMany(i => i.InventoryAppendChecks).Select(c => c.CheckSellId);
+                var inventories = await context.Inventories
+                    .Where(i => i.Status!=DocumentStatus.Successed).AsNoTracking().ToListAsync();
                 //TODO: Заменить foreach на Expression values
                 foreach (var inventory in inventories)
                 {
-                    var checks = await context.CheckSells.Include(c => c.CheckGoods).Include(c => c.Shift)
-                        .Where(c => !inventoryAppendedChecksId.Contains(c.Id) & c.DateCreate >= inventory.Start & c.Shift.ShopId == inventory.ShopId)
-                        .AsNoTracking().ToListAsync();
-                    var goodsInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
-                        .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
-                        .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId);
-                    if (inventoryShema == "CurrentBalanceOnStart")
-                        context.InventoryAppendChecks.AddRange(
-                            checks.SelectMany(c => c.CheckGoods).Select(c =>
-                            new InventoryAppendCheck
-                            {
-                                InventoryId = inventory.Id,
-                                ShopId = inventory.ShopId,
-                                CheckSellId = c.CheckSellId,
-                                GoodId = c.GoodId,
-                                Count = (goodsInInventory.Where(g => g.Key == c.GoodId).FirstOrDefault() == null ? 1 : -1) * c.Count
-                            }));
-                    if (inventoryShema == "GetBalanceAfterCloseShift")
-                        context.InventoryAppendChecks.AddRange(
-                            checks.SelectMany(c => c.CheckGoods)
-                            .Where(c => goodsInInventory.Where(g => g.Key == c.GoodId).FirstOrDefault() != null)
-                            .Select(c =>
-                            new InventoryAppendCheck
-                            {
-                                InventoryId = inventory.Id,
-                                ShopId = inventory.ShopId,
-                                CheckSellId = c.CheckSellId,
-                                GoodId = c.GoodId,
-                                Count = c.Count
-                            }));
+                    if (inventory.Status == DocumentStatus.New || inventory.Status == DocumentStatus.Processing)
+                        await calcChack(context, inventory);
+                    if (inventory.Status == DocumentStatus.Processing)
+                        await calcCountDiif(context, inventory);
+
                 };
                 await context.SaveChangesAsync();
             }
@@ -76,6 +52,117 @@ namespace OnlineShop2.Api.Services
                 _logger.LogError($"HostedService - ControlBuyFromInventory \n " + ex.Message);
             }
             
+        }
+
+        /// <summary>
+        /// Определение чеков во время проведения инвенторизации
+        /// выполняем вычитание если товар указан в инвенторизации
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="inventory"></param>
+        /// <returns></returns>
+        private async Task calcChack(OnlineShopContext context, Inventory inventory)
+        {
+            var inventoryAppendedChecksId = await context.InventoryAppendChecks
+                .Where(c=>c.InventoryId==inventory.Id).GroupBy(c=>c.CheckSellId).AsNoTracking().Select(c=>c.Key).ToListAsync();
+
+            var checks = await context.CheckSells.Include(c => c.CheckGoods).Include(c => c.Shift)
+                        .Where(c => 
+                            !inventoryAppendedChecksId.Contains(c.Id) & 
+                            c.ShiftId>=inventory.CurrentShiftId & 
+                            c.Shift.ShopId==inventory.ShopId &
+                            c.DateCreate > inventory.Start)
+                        .AsNoTracking().ToListAsync();
+            var goodsIdInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
+                .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
+                .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId).Select(g=>g.Key);
+            context.InventoryAppendChecks.AddRange(
+                checks.SelectMany(c => c.CheckGoods)
+                .Where(c => !goodsIdInInventory.Contains(c.GoodId))
+                .Select(c =>
+                new InventoryAppendCheck
+                {
+                    InventoryId = inventory.Id,
+                    ShopId = inventory.ShopId,
+                    CheckSellId = c.CheckSellId,
+                    GoodId = c.GoodId,
+                    Count = -1 * c.Count
+                }));
+        }
+
+        /// <summary>
+        /// Расчет расхождений после завершения инвенторизации
+        /// и закрытия смены
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="inventory"></param>
+        /// <returns></returns>
+        private async Task calcCountDiif(OnlineShopContext context, Inventory inventory)
+        {
+            if (inventoryShema == "CurrentBalanceOnStart") return;
+            if (inventory.CurrentShiftId == null) return;
+            var curShift = await context.Shifts.Where(s=>s.Id>=inventory.CurrentShiftId & s.ShopId==inventory.ShopId & s.Stop!=null).FirstOrDefaultAsync();
+            if(curShift==null) return;
+
+            var inventoryGoods = await context.InventoryGroups.Include(i => i.InventoryGoods).Where(i => i.InventoryId == inventory.Id)
+                .SelectMany(x=>x.InventoryGoods).GroupBy(x=>x.GoodId).Select(x=> new { GoodId = x.Key, countFact = x.Sum(g => g.CountFact) })
+                .ToArrayAsync();
+
+            var currentBalance = await context.GoodCurrentBalances.Include(x=>x.Good)
+                .ThenInclude(x=>x.GoodPrices.Where(p=>p.ShopId==inventory.ShopId))
+                .Where(x => x.ShopId == inventory.ShopId & !x.Good.IsDeleted).AsNoTracking().ToArrayAsync();
+
+            //Вычтем продажи за время инвенторизации
+            var checkGoods = await context.InventoryAppendChecks.Where(x => x.InventoryId == inventory.Id).GroupBy(x => x.GoodId)
+                .AsNoTracking().Select(x => new { goodId = x.Key, count = x.Sum(x => x.Count) }).ToArrayAsync();
+
+            var countSummaries = from balance in currentBalance
+                                 join inventoryGood in inventoryGoods on balance.GoodId equals inventoryGood.GoodId into t
+                                 from sub in t.DefaultIfEmpty()
+                                 select new {
+                                     GoodLegacyId=balance.Good.LegacyId,
+                                     InventoryId = inventory.Id,
+                                     GoodId = balance.GoodId,
+                                     CountOld = balance.CurrentCount,
+                                     CountCurrent = (sub?.countFact ?? 0) + (checkGoods.Where(x=>x.goodId==balance.GoodId).FirstOrDefault()?.count ?? 0),
+                                     Price = balance.Good.GoodPrices.First().Price
+                                 };
+
+            var transaction = context.Database.BeginTransaction();
+            context.InventorySummaryGoods.AddRange(countSummaries.Select(x=>new InventorySummaryGood {
+                InventoryId=x.InventoryId,
+                GoodId=x.GoodId,
+                CountOld=x.CountOld,
+                CountCurrent=x.CountCurrent,
+                Price=x.Price
+            }));
+
+            var changedBalance = from b in currentBalance
+                                 join c in countSummaries on b.GoodId equals c.GoodId
+                                 where b.CurrentCount != c.CountCurrent
+                                 select new { db = b, count = c.CountCurrent };
+            foreach(var change in changedBalance)
+            {
+                context.Entry(change.db).State = EntityState.Modified;
+                change.db.CurrentCount = change.count;
+            }
+
+            var shop = context.Shops.Find(inventory.ShopId);
+            if(shop!=null && shop.LegacyDbNum!=null)
+                using (var legacyDb = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
+                {
+                    legacyDb.GoodCountCurrentRepository.SetCurrent(
+                        countSummaries.Where(x=>x.GoodLegacyId!=null).ToDictionary(x => (int)x.GoodLegacyId, x => x.CountCurrent)
+                        );
+                }
+
+            inventory.SumDb = countSummaries.Sum(x => x.CountOld * x.Price);
+            inventory.SumFact = countSummaries.Sum(x => x.CountCurrent * x.Price);
+            inventory.Status = DocumentStatus.Complited;
+            context.Entry(inventory).State = EntityState.Modified;
+            context.SaveChanges();
+
+            transaction.Commit();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
