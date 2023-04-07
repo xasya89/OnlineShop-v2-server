@@ -73,6 +73,7 @@ namespace OnlineShop2.Api.Services
                             c.Shift.ShopId==inventory.ShopId &
                             c.DateCreate > inventory.Start)
                         .AsNoTracking().ToListAsync();
+            if (checks.Count == 0) return;
             var goodsIdInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
                 .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
                 .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId).Select(g=>g.Key);
@@ -137,6 +138,11 @@ namespace OnlineShop2.Api.Services
                 Price=x.Price
             }));
 
+            inventory.SumDb = countSummaries.Sum(x => x.CountOld * x.Price);
+            inventory.SumFact = countSummaries.Sum(x => x.CountCurrent * x.Price);
+            inventory.Status = DocumentStatus.Complited;
+            context.Entry(inventory).State = EntityState.Modified;
+
             var changedBalance = from b in currentBalance
                                  join c in countSummaries on b.GoodId equals c.GoodId
                                  where b.CurrentCount != c.CountCurrent
@@ -156,10 +162,7 @@ namespace OnlineShop2.Api.Services
                         );
                 }
 
-            inventory.SumDb = countSummaries.Sum(x => x.CountOld * x.Price);
-            inventory.SumFact = countSummaries.Sum(x => x.CountCurrent * x.Price);
-            inventory.Status = DocumentStatus.Complited;
-            context.Entry(inventory).State = EntityState.Modified;
+
             context.SaveChanges();
 
             transaction.Commit();
