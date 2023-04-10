@@ -29,6 +29,9 @@ public partial class OnlineShopContext : DbContext
     public DbSet<CheckSell> CheckSells { get; set; }
     public DbSet<CheckGood> CheckGoods { get; set; }
 
+    public DbSet<Arrival> Arrivals { get; set; }
+    public DbSet<ArrivalGood> ArrivalGoods { get; set; }
+
     public OnlineShopContext()
     {
     }

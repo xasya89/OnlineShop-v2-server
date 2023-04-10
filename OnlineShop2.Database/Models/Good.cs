@@ -31,6 +31,8 @@ namespace OnlineShop2.Database.Models
         public string Name { get; set; }
         public int? LegacyId { get; set; }
         public List<Good> Goods { get; set; } = new();
+
+        public ICollection<Arrival> Arrivals { get; set; }
     }
 
     [Index(nameof(LegacyId))]
@@ -63,6 +65,8 @@ namespace OnlineShop2.Database.Models
         public ICollection<CheckGood> CheckGoods { get; set; }
         public ICollection<ShiftSummary> ShiftSummaries { get; set; }
         public ICollection<InventoryAppendCheck> InventoryAppendChecks { get; set; }
+
+        public ICollection<ArrivalGood> ArrivalGoods { get; set; }
     }
 
     public class GoodPrice
