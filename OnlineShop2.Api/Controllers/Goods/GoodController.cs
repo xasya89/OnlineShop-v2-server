@@ -9,7 +9,7 @@ namespace OnlineShop2.Api.Controllers.Goods
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class GoodController : ControllerBase
     {
         private readonly GoodService _service;
@@ -20,5 +20,11 @@ namespace OnlineShop2.Api.Controllers.Goods
 
         [HttpGet("/api/{shopId}/goods/scan/{barcode}")]
         public async Task<GoodResponseModel> Scan(int shopId, string barcode)=>await _service.GetGoodByBarcode(shopId, barcode);
+
+        [HttpPost("/api/{shopId}/goods")]
+        public async Task<GoodResponseModel> Create(int shopId, [FromBody]GoodCreateRequestModel model)=>await _service.Create(shopId, model);
+
+        [HttpPut("/api/{shopId}/goods")]
+        public async Task<GoodResponseModel> Update(int shopId, [FromBody] GoodCreateRequestModel model)=> await _service.Update(shopId, model);
     }
 }

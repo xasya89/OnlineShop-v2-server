@@ -14,7 +14,16 @@ namespace OnlineShop2.Api.Extensions
             var config = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<Shop, ShopResponseModel>();
+                cfg.CreateMap<GoodGroup, GoodGroupResponseModel>();
+                cfg.CreateMap<Supplier, SupplierResponseModel>();
                 cfg.CreateMap<Good, GoodResponseModel>();
+                cfg.CreateMap<GoodPrice, GoodPriceResponseModel>();
+                cfg.CreateMap<Barcode, BarCodeResponseModel>();
+
+                cfg.CreateMap<GoodCreateRequestModel, Good>();
+                cfg.CreateMap<GoodPriceCreateRequestModel, GoodPrice>();
+                cfg.CreateMap<BarcodeCreateRequestModel, Barcode>();
+
                 cfg.CreateMap<Inventory, InventoryResponseModel>();
                 cfg.CreateMap<InventoryGroup, InventoryGroupResponseModel>();
                 cfg.CreateMap<InventoryGood, InventoryGoodResponseModel>();
