@@ -15,6 +15,10 @@ namespace OnlineShop2.Api.Controllers.Goods
         private readonly GoodService _service;
         public GoodController(GoodService service) => _service = service;
 
+        [HttpGet("/api/{shopId}/goods")]
+        public async Task<dynamic> GetAll(int shopId, [FromQuery]int? groupId, [FromQuery]bool skipDeleted, [FromQuery]string? find,  [FromQuery]int page = 1, [FromQuery]int count = 100) =>
+            await _service.GetAll(shopId, groupId, skipDeleted, find, page, count);
+
         [HttpGet("/api/{shopId}/goods/{id}")]
         public async Task<GoodResponseModel> Get(int shopId, int id) => await _service.Get(shopId, id);
 
@@ -26,5 +30,8 @@ namespace OnlineShop2.Api.Controllers.Goods
 
         [HttpPut("/api/{shopId}/goods")]
         public async Task<GoodResponseModel> Update(int shopId, [FromBody] GoodCreateRequestModel model)=> await _service.Update(shopId, model);
+
+        [HttpDelete("/api/{shopId}/goods/{id}")]
+        public async Task Delete(int shopId, int id) => await _service.Delete(id);
     }
 }

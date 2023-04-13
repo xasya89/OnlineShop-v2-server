@@ -16,10 +16,13 @@ namespace OnlineShop2.Api.Extensions
                 cfg.CreateMap<Shop, ShopResponseModel>();
                 cfg.CreateMap<GoodGroup, GoodGroupResponseModel>();
                 cfg.CreateMap<Supplier, SupplierResponseModel>();
+
+                cfg.CreateMap<GoodGroup, GoodGroupCreateRequestModel>();
                 cfg.CreateMap<Good, GoodResponseModel>();
                 cfg.CreateMap<GoodPrice, GoodPriceResponseModel>();
                 cfg.CreateMap<Barcode, BarCodeResponseModel>();
 
+                cfg.CreateMap<GoodGroupCreateRequestModel, GoodGroup>();
                 cfg.CreateMap<GoodCreateRequestModel, Good>();
                 cfg.CreateMap<GoodPriceCreateRequestModel, GoodPrice>();
                 cfg.CreateMap<BarcodeCreateRequestModel, Barcode>();

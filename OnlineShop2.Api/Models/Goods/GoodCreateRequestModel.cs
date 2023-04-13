@@ -2,6 +2,13 @@
 
 namespace OnlineShop2.Api.Models.Goods
 {
+    public class GoodGroupCreateRequestModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int ShopId { get; set; }
+    }
+
     public class GoodCreateRequestModel
     {
         public int Id { get; set; }

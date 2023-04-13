@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Database;
@@ -53,4 +55,18 @@ public partial class OnlineShopContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    public void ChangeEntityByDTO<T>(EntityEntry entity, T model)
+    {
+        string[] collectionsName = new[] { nameof(IList), nameof(ICollection), nameof(IEnumerable) };
+        var propertes = typeof(T).GetProperties().Where(p => p.Name.ToLower() != "id");
+        foreach (var name in collectionsName)
+            propertes = propertes.Where(p => p.PropertyType == typeof(string) || p.PropertyType.GetInterface(name) == null);
+        foreach (var prop in propertes)
+        {
+            var entittyProp = entity.Metadata.GetProperties().Where(p => p.Name == prop.Name).FirstOrDefault();
+            if (entittyProp != null)
+                entity.Property(entittyProp.Name).CurrentValue = prop.GetValue(model);
+        }
+    }
 }

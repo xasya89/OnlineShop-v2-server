@@ -22,17 +22,27 @@ namespace OnlineShop2.Api.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<Good>> GetAll(int shopId, int? groupId, bool skipDeleted, string? find, int page=1, int count=100)
+        public async Task<dynamic> GetAll(int shopId, int? groupId, bool skipDeleted, string? find, int page=1, int count=100)
         {
-            var query = _context.Goods.Include(g => g.Barcodes).Include(g => g.Price).Include(g=>g.GoodGroup).Include(g=>g.Supplier)
-                .Where(g => EF.Functions.ILike(g.Name, $"%{find}%") || g.Barcodes.Where(b => b.Code == find).Any());
+            var query = _context.Goods
+                .Include(g => g.Barcodes).Include(g => g.GoodPrices).Include(g => g.GoodGroup).Include(g => g.Supplier)
+                .Where(g=> EF.Functions.ILike(g.Name, $"%{find}%") || g.Barcodes.Where(b => b.Code == find).Any());
+            
             if (ownerGoodForShops)
                 query = query.Where(g => g.ShopId == shopId);
             if (groupId != null)
                 query = query.Where(g => g.GoodGroupId == groupId);
             if (skipDeleted)
                 query = query.Where(g => !g.IsDeleted);
-            return await query.Skip((page-1)*count).Take(count).ToArrayAsync();
+
+            int total = await query.CountAsync();
+            var goods = await query.Skip((page - 1) * count).Take(count).ToListAsync();
+            goods.ForEach(g => g.Price = g.GoodPrices.Where(p => p.ShopId == shopId).FirstOrDefault()?.Price ?? 0);
+            return new
+            {
+                Total = total,
+                Goods = MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(goods)
+            };
         }
 
         public async Task<GoodResponseModel> GetOne(int shopId, int id)
@@ -56,6 +66,7 @@ namespace OnlineShop2.Api.Services
             var good = MapperConfigurationExtension.GetMapper().Map<Good>(model);
             good.ShopId = shopId;
             _context.Add(good);
+            _context.GoodCurrentBalances.AddRange(good.GoodPrices.Select(p => new GoodCurrentBalance { Good = good, ShopId = p.ShopId, CurrentCount = 0 }));
             await _context.SaveChangesAsync();
             return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
         }
@@ -65,26 +76,28 @@ namespace OnlineShop2.Api.Services
             var good = await _context.Goods.Include(g=>g.GoodPrices).Include(g=>g.Barcodes).Where(g=>g.Id==model.Id).FirstOrDefaultAsync();
             if (good == null) throw new MyServiceException($"Товар с id {model.Id} не найден");
 
-            Compare<GoodCreateRequestModel>(_context.Entry(good), model);
-            good.GoodPrices.ForEach(price => Compare<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
-            good.Barcodes.ForEach(barcode => Compare<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
-
+            _context.ChangeEntityByDTO<GoodCreateRequestModel>(_context.Entry(good), model);
+            good.GoodPrices.ForEach(price => _context.ChangeEntityByDTO<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
+            good.Barcodes.ForEach(barcode => _context.ChangeEntityByDTO<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
             await _context.SaveChangesAsync();
             return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
         }
 
-        private void Compare<T>(EntityEntry entity, T model)
+        public async Task Delete(int id)
         {
-            string[] collectionsName = new[] { nameof(IList), nameof(ICollection), nameof(IEnumerable) };
-            var propertes = typeof(T).GetProperties().Where(p=>p.Name.ToLower()!="id");
-            foreach (var name in collectionsName)
-                propertes = propertes.Where(p => p.PropertyType==typeof(string) || p.PropertyType.GetInterface(name) == null);
-            foreach(var prop in propertes)
-            {
-                var entittyProp = entity.Metadata.GetProperties().Where(p => p.Name == prop.Name).FirstOrDefault();
-                if(entittyProp!=null)
-                    entity.Property(entittyProp.Name).CurrentValue= prop.GetValue(model);
-            }
+            var good = await _context.Goods.FindAsync(id);
+            if (good == null) throw new MyServiceException($"Товар с id {id} не найден");
+
+            //Проверим существование товара в дургих документах
+            bool flag = true;
+            flag = await _context.CheckGoods.Where(c=>c.GoodId==id).AnyAsync() ? false : flag;
+            flag = await _context.InventoryGoods.Where(c => c.GoodId == id).AnyAsync() ? false : flag;
+            if (flag)
+                _context.Remove(good);
+            else
+                good.IsDeleted = true;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<GoodResponseModel> Get(int shopId, int id)
