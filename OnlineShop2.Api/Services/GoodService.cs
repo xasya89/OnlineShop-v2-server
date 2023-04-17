@@ -22,7 +22,7 @@ namespace OnlineShop2.Api.Services
             _context = context;
         }
 
-        public async Task<dynamic> GetAll(int shopId, int? groupId, bool skipDeleted, string? find, int page=1, int count=100)
+        public async Task<dynamic> GetAll(int shopId, int[] groups, bool skipDeleted, string? find, int page=1, int count=100)
         {
             var query = _context.Goods
                 .Include(g => g.Barcodes).Include(g => g.GoodPrices).Include(g => g.GoodGroup).Include(g => g.Supplier)
@@ -30,10 +30,11 @@ namespace OnlineShop2.Api.Services
             
             if (ownerGoodForShops)
                 query = query.Where(g => g.ShopId == shopId);
-            if (groupId != null)
-                query = query.Where(g => g.GoodGroupId == groupId);
+            if (groups != null && groups.Length>0)
+                query = query.Where(g => groups.Contains(g.GoodGroupId));
             if (skipDeleted)
                 query = query.Where(g => !g.IsDeleted);
+
 
             int total = await query.CountAsync();
             var goods = await query.Skip((page - 1) * count).Take(count).ToListAsync();

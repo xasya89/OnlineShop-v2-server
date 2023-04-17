@@ -16,8 +16,8 @@ namespace OnlineShop2.Api.Controllers.Goods
         public GoodController(GoodService service) => _service = service;
 
         [HttpGet("/api/{shopId}/goods")]
-        public async Task<dynamic> GetAll(int shopId, [FromQuery]int? groupId, [FromQuery]bool skipDeleted, [FromQuery]string? find,  [FromQuery]int page = 1, [FromQuery]int count = 100) =>
-            await _service.GetAll(shopId, groupId, skipDeleted, find, page, count);
+        public async Task<dynamic> GetAll(int shopId, [FromQuery]bool skipDeleted, [FromQuery(Name = "groups")] int[] groups, [FromQuery]string? find,  [FromQuery]int page = 1, [FromQuery]int count = 100) =>
+            await _service.GetAll(shopId, groups, skipDeleted, find, page, count);
 
         [HttpGet("/api/{shopId}/goods/{id}")]
         public async Task<GoodResponseModel> Get(int shopId, int id) => await _service.Get(shopId, id);

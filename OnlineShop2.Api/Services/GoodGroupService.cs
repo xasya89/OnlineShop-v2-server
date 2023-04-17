@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Goods;
+using OnlineShop2.Api.Services.Legacy;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
 
@@ -11,11 +12,13 @@ namespace OnlineShop2.Api.Services
         private bool ownerGoodForShops;
         private readonly IConfiguration _configuration;
         private readonly OnlineShopContext _context;
+        private readonly GoodGroupLegacyService _legacy;
 
-        public GoodGroupService(IConfiguration configuration, OnlineShopContext context)
+        public GoodGroupService(IConfiguration configuration, OnlineShopContext context, GoodGroupLegacyService legacy)
         {
             _configuration = configuration;
             _context = context;
+            _legacy = legacy;
             ownerGoodForShops = configuration.GetValue<bool>("OwnerGoodForShops");
         }
 
@@ -28,6 +31,9 @@ namespace OnlineShop2.Api.Services
         {
             var group = MapperConfigurationExtension.GetMapper().Map<GoodGroup>(model);
             group.ShopId = shopId;
+            var shop = await _context.Shops.AsNoTracking().SingleAsync(s => s.Id == shopId);
+            if(shop.LegacyDbNum!=null)
+                group.LegacyId = await _legacy.Create(shop.LegacyDbNum ?? 0, model.Name);
             _context.Add(group);
             await _context.SaveChangesAsync();
             return MapperConfigurationExtension.GetMapper().Map<GoodGroupCreateRequestModel>(group);
