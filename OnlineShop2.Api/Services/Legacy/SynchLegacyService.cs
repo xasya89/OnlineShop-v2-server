@@ -32,6 +32,13 @@ namespace OnlineShop2.Api.Services.Legacy
             normalizeSequence();
         }
 
+        public async Task SynchSuppliers(int shopId)
+        {
+            var shop = await _context.Shops.AsNoTracking().SingleAsync(s => s.Id == shopId);
+            if(shop.LegacyDbNum!=null)
+                using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
+                    await synchSuppliers(unitOfWOrkLegacy.GoodRepository, shopId);
+        }
         private async Task synchSuppliers(GoodLegacyRepository repository, int shopId)
         {
             var suppliersLegacy = await repository.GetSuppliersAsync();

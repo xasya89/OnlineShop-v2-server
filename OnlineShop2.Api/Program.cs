@@ -58,6 +58,8 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<GoodGroupService>();
             builder.Services.AddTransient<GoodGroupLegacyService>();
 
+            builder.Services.AddTransient<SupplierService>();
+
             builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<ControlBuyFromInventoryBackgroundService>();
 
