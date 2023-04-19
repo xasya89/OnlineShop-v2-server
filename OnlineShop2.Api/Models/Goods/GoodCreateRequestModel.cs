@@ -29,6 +29,7 @@ namespace OnlineShop2.Api.Models.Goods
     public class BarcodeCreateRequestModel
     {
         public int Id { get; set; }
+        public bool IsDeleted { get; set; }
         public string Code { get; set; }
     }
 

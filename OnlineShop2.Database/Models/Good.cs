@@ -72,6 +72,8 @@ namespace OnlineShop2.Database.Models
     public class GoodPrice
     {
         public int Id { get; set; }
+        public Good Good { get; set; }
+        public int GoodId { get; set; }
         public Shop Shop { get; set; }
         public int ShopId { get; set; }
         public decimal Price { get; set; }

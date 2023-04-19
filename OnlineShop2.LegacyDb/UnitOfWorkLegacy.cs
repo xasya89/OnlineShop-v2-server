@@ -48,6 +48,7 @@ namespace OnlineShop2.LegacyDb
         }
         public void Dispose()
         {
+            _connection.Close();
             _connection.Dispose();
             GC.SuppressFinalize(this);
         }

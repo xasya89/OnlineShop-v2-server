@@ -58,6 +58,7 @@ namespace OnlineShop2.Api.Services
 
         public async Task<GoodResponseModel> Create(int shopId, GoodCreateRequestModel model)
         {
+            if (string.IsNullOrEmpty(model.Name)) throw new MyServiceException("Не указано наименование товара");
             var barcodes = model.Barcodes.Select(b=>b.Code);
             var barcodeInDb =await _context.Barcodes.Include(b=>b.Good).Where(b => barcodes.Contains(b.Code)).ToArrayAsync();
             if (!ownerGoodForShops && barcodeInDb.Count()>0)
@@ -80,6 +81,12 @@ namespace OnlineShop2.Api.Services
             _context.ChangeEntityByDTO<GoodCreateRequestModel>(_context.Entry(good), model);
             good.GoodPrices.ForEach(price => _context.ChangeEntityByDTO<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
             good.Barcodes.ForEach(barcode => _context.ChangeEntityByDTO<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
+            _context.GoodPrices.AddRange(model.GoodPrices.Where(p => p.Id == 0).Select(p => new GoodPrice { GoodId=model.Id,  ShopId = p.ShopId, Price = p.Price }) );
+            _context.Barcodes.AddRange(model.Barcodes.Where(b => b.Id == 0).Select(b => new Barcode { Good = good, Code = b.Code }));
+
+            var deletedBarcodesId = model.Barcodes.Where(b => b.IsDeleted).Select(b => b.Id);
+            _context.Barcodes.RemoveRange(good.Barcodes.Where(b => deletedBarcodesId.Contains(b.Id)));
+
             await _context.SaveChangesAsync();
             return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
         }
