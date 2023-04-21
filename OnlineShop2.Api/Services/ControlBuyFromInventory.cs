@@ -155,7 +155,7 @@ namespace OnlineShop2.Api.Services
 
             var shop = context.Shops.Find(inventory.ShopId);
             if(shop!=null && shop.LegacyDbNum!=null)
-                using (var legacyDb = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
+                using (var legacyDb = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
                 {
                     legacyDb.GoodCountCurrentRepository.SetCurrent(
                         countSummaries.Where(x=>x.GoodLegacyId!=null).ToDictionary(x => (int)x.GoodLegacyId, x => x.CountCurrent)

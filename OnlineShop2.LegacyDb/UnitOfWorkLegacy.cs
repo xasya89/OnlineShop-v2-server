@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace OnlineShop2.LegacyDb
 {
-    public class UnitOfWorkLegacy : IDisposable
+    public class UnitOfWorkLegacyOld : IDisposable
     {
         private MySqlConnection _connection;
         private GoodLegacyRepository _goodRepository;
@@ -41,7 +41,7 @@ namespace OnlineShop2.LegacyDb
                 return _shiftLegacyRepository;
             }
         }
-        public UnitOfWorkLegacy(string conStr)
+        public UnitOfWorkLegacyOld(string conStr)
         {
             _connection = new MySqlConnection(conStr);
             _connection.Open();

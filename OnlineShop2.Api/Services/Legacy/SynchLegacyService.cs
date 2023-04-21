@@ -20,7 +20,7 @@ namespace OnlineShop2.Api.Services.Legacy
         public async Task SynchGoods(int shopId, int shopNumLegacy)
         {
             string connstr = _configuration.GetConnectionString("shop" + shopNumLegacy);
-            using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shopNumLegacy)))
+            using (var unitOfWOrkLegacy = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shopNumLegacy)))
             {
                 var repository = unitOfWOrkLegacy.GoodRepository;
 
@@ -36,7 +36,7 @@ namespace OnlineShop2.Api.Services.Legacy
         {
             var shop = await _context.Shops.AsNoTracking().SingleAsync(s => s.Id == shopId);
             if(shop.LegacyDbNum!=null)
-                using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
+                using (var unitOfWOrkLegacy = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
                     await synchSuppliers(unitOfWOrkLegacy.GoodRepository, shopId);
         }
         private async Task synchSuppliers(GoodLegacyRepository repository, int shopId)

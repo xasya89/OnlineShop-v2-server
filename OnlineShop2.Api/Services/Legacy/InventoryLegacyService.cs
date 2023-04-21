@@ -52,7 +52,7 @@ namespace OnlineShop2.Api.Services.Legacy
             {
                 if (shift != null)
                     throw new MyServiceException("Есть не закрытая смена");
-                using (var unitOfWOrkLegacy = new UnitOfWorkLegacy(_configuration.GetConnectionString("shop" + shopNumLegacy)))
+                using (var unitOfWOrkLegacy = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shopNumLegacy)))
                 {
                     var repository = unitOfWOrkLegacy.GoodCountCurrentRepository;
                     await synchBalance(repository, shopId); ;

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics;
+using OnlineShop2.Api.Services.HostedService;
 
 namespace OnlineShop2.Api
 {
@@ -50,6 +51,9 @@ namespace OnlineShop2.Api
             builder.Services.AddDbContext<OnlineShopContext>(option=>
                 option.UseNpgsql(builder.Configuration.GetConnectionString("db"))
             );
+
+            builder.Services.AddServicesLegacy();
+
             builder.Services.AddTransient<AuthService>();
             builder.Services.AddTransient<ShopService>();
             builder.Services.AddTransient<SynchLegacyService>();
@@ -60,7 +64,8 @@ namespace OnlineShop2.Api
 
             builder.Services.AddTransient<SupplierService>();
 
-            builder.Services.AddHostedService<ShiftSynchBackgroundService>();
+            //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
+            builder.Services.AddHostedService<SynchLegacyHostedService>();
             builder.Services.AddHostedService<ControlBuyFromInventoryBackgroundService>();
 
             builder.Services.AddAuthorization();

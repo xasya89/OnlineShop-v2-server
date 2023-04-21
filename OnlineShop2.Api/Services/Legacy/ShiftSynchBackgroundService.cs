@@ -35,7 +35,7 @@ namespace OnlineShop2.Api.Services.Legacy
                     if (constr == null)
                         return;
                     await synchService.SynchGoods(shop.Id, shop.LegacyDbNum??0);
-                    await new UnitOfWorkLegacy(constr).ShiftLegacyRepository.ShiftSynch(context, DateOnly.FromDateTime(DateTime.Now), shop.Id);
+                    await new UnitOfWorkLegacyOld(constr).ShiftLegacyRepository.ShiftSynch(context, DateOnly.FromDateTime(DateTime.Now), shop.Id);
                     context.SaveChanges();
                 }
             }

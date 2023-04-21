@@ -11,19 +11,19 @@ namespace OnlineShop2.Api.Services
     {
         private readonly IConfiguration _configuration;
         private readonly OnlineShopContext _context;
-        private readonly SynchLegacyService _synchLegacy;
 
-        public SupplierService(OnlineShopContext context, IConfiguration configuration, SynchLegacyService synchLegacy)
+        public SupplierService(OnlineShopContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
-            _synchLegacy=synchLegacy;
         }
 
         public async Task<IEnumerable<SupplierResponseModel>> GetList(int shopId)
         {
-            await _synchLegacy.SynchSuppliers(shopId);
-            return await _context.Suppliers.Where(s => s.ShopId == shopId).AsNoTracking().OrderBy(s=>s.Name).Select(s => new SupplierResponseModel
+            var suppliers = _context.Suppliers;
+            if (_configuration.GetValue<bool>("OwnerGoodForShops"))
+                suppliers.Where(s => s.ShopId==shopId);
+            return await suppliers.AsNoTracking().OrderBy(s=>s.Name).Select(s => new SupplierResponseModel
             {
                 Id = s.Id,
                 ShopId = s.ShopId,
