@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Api.Services.Legacy;
@@ -11,32 +12,34 @@ namespace OnlineShop2.Api.Services
     {
         private bool ownerGoodForShops;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
         private readonly OnlineShopContext _context;
         private readonly GoodGroupLegacyService _legacy;
 
-        public GoodGroupService(IConfiguration configuration, OnlineShopContext context, GoodGroupLegacyService legacy)
+        public GoodGroupService(IConfiguration configuration, IMapper mapper, OnlineShopContext context, GoodGroupLegacyService legacy)
         {
             _configuration = configuration;
             _context = context;
             _legacy = legacy;
+            _mapper = mapper;
             ownerGoodForShops = configuration.GetValue<bool>("OwnerGoodForShops");
         }
 
         public async Task<IEnumerable<GoodGroupCreateRequestModel>> GetAll(int shopId) =>
-            MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodGroupCreateRequestModel>>(
+            _mapper.Map<IEnumerable<GoodGroupCreateRequestModel>>(
                 await _context.GoodsGroups.Where(g => !ownerGoodForShops || g.ShopId == shopId).OrderBy(g => g.Name).ToListAsync()
                 );
 
         public async Task<GoodGroupCreateRequestModel> Create(int shopId, GoodGroupCreateRequestModel model)
         {
-            var group = MapperConfigurationExtension.GetMapper().Map<GoodGroup>(model);
+            var group = _mapper.Map<GoodGroup>(model);
             group.ShopId = shopId;
             var shop = await _context.Shops.AsNoTracking().SingleAsync(s => s.Id == shopId);
             if(shop.LegacyDbNum!=null)
                 group.LegacyId = await _legacy.Create(shop.LegacyDbNum ?? 0, model.Name);
             _context.Add(group);
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<GoodGroupCreateRequestModel>(group);
+            return _mapper.Map<GoodGroupCreateRequestModel>(group);
         }
 
         public async Task<GoodGroupCreateRequestModel> Update(GoodGroupCreateRequestModel model)
@@ -45,7 +48,7 @@ namespace OnlineShop2.Api.Services
             if (group == null) throw new MyServiceException($"Группа с id {model.Id} не найдена");
             _context.ChangeEntityByDTO<GoodGroupCreateRequestModel>(_context.Entry(group), model);
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<GoodGroupCreateRequestModel>(group);
+            return _mapper.Map<GoodGroupCreateRequestModel>(group);
         }
 
         public async Task Delete(int id)

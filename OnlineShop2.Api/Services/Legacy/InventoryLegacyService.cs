@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Inventory;
@@ -15,19 +16,21 @@ namespace OnlineShop2.Api.Services.Legacy
     {
         private readonly OnlineShopContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
         private string inventoryShema = "";
 
         private static string INVENTORY_SHEMA_COUNT_ON_START = "CurrentBalanceOnStart";
         private static string INVENTORY_SHEMA_AFTER_CLOSE = "GetBalanceAfterCloseShift";
-        public InventoryLegacyService(OnlineShopContext context, IConfiguration configuration)
+        public InventoryLegacyService(OnlineShopContext context, IConfiguration configuration, IMapper mapper)
         {
             _context = context;
             _configuration = configuration;
+            _mapper = mapper;
             inventoryShema = configuration.GetSection("InventoryShema").Value;
         }
 
         public async Task<IEnumerable<InventoryResponseModel>> GetList(int shopId) =>
-            MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryResponseModel>>(
+            _mapper.Map<IEnumerable<InventoryResponseModel>>(
                 await _context.Inventories.Where(i=>i.ShopId==shopId).OrderByDescending(i=>i.Start).ToListAsync()
                 );
 
@@ -123,7 +126,7 @@ namespace OnlineShop2.Api.Services.Legacy
             else
                 inventory.InventorySummaryGoods = await _context.InventorySummaryGoods.Include(s => s.Good)
                     .Where(s => s.InventoryId == id).ToListAsync();
-            var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+            var result = _mapper.Map<InventoryResponseModel>(inventory);
             return result;
         }
 
@@ -147,7 +150,7 @@ namespace OnlineShop2.Api.Services.Legacy
                     (!isDiff & string.IsNullOrEmpty(search))
                 ))
                 .Skip((page-1)*pageSize).Take(pageSize).ToListAsync();
-            var result = MapperConfigurationExtension.GetMapper().Map<InventoryResponseModel>(inventory);
+            var result = _mapper.Map<InventoryResponseModel>(inventory);
             result.Total = total;
             return result;
         }
@@ -174,7 +177,7 @@ namespace OnlineShop2.Api.Services.Legacy
             var newGroup = new InventoryGroup { Inventory=inventory, Name= model.Name };
             _context.InventoryGroups.Add(newGroup);
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<InventoryGroupResponseModel>(newGroup);
+            return _mapper.Map<InventoryGroupResponseModel>(newGroup);
         }
 
         public async Task<InventoryGroupResponseModel> EditGroup(int groupId, InventoryAddGroupRequestModel model)
@@ -182,7 +185,7 @@ namespace OnlineShop2.Api.Services.Legacy
             var group = await _context.InventoryGroups.FindAsync(groupId);
             group.Name = model.Name;
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<InventoryGroupResponseModel>(group);
+            return _mapper.Map<InventoryGroupResponseModel>(group);
         }
 
         public async Task<IEnumerable<InventoryGoodResponseModel>> AddEditGood(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
@@ -198,7 +201,7 @@ namespace OnlineShop2.Api.Services.Legacy
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
+            return _mapper.Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
         }
         
         public async Task RemoveGroup(int groupId)

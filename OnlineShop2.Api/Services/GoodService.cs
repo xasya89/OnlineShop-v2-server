@@ -14,12 +14,14 @@ namespace OnlineShop2.Api.Services
     {
         private readonly IConfiguration _configuration;
         private readonly OnlineShopContext _context;
+        private readonly IMapper _mapper;
         private bool ownerGoodForShops = false;
-        public GoodService(OnlineShopContext context, IConfiguration configuration)
+        public GoodService(OnlineShopContext context, IConfiguration configuration, IMapper mapper)
         {
             _configuration = configuration;
             ownerGoodForShops = _configuration.GetValue<bool>("OwnerGoodForShops");
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<dynamic> GetAll(int shopId, int[] groups, bool skipDeleted, string? find, int page=1, int count=100)
@@ -42,7 +44,7 @@ namespace OnlineShop2.Api.Services
             return new
             {
                 Total = total,
-                Goods = MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(goods)
+                Goods = _mapper.Map<IEnumerable<GoodResponseModel>>(goods)
             };
         }
 
@@ -53,7 +55,7 @@ namespace OnlineShop2.Api.Services
             var good = await query.FirstOrDefaultAsync();
             if (good == null)
                 throw new MyServiceException($"Товар id {id} не найден");
-            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
+            return _mapper.Map<GoodResponseModel>(good);
         }
 
         public async Task<GoodResponseModel> Create(int shopId, GoodCreateRequestModel model)
@@ -65,12 +67,12 @@ namespace OnlineShop2.Api.Services
                 throw new MyServiceException($"Товар с штрих кодом {string.Join(" ", barcodeInDb.Select(b=>b.Code))} существует");
             if(ownerGoodForShops && barcodeInDb.Where(b=>b.Good.ShopId==shopId).Any())
                 throw new MyServiceException($"Товар с штрих кодом {string.Join(" ", barcodeInDb.Where(b => b.Good.ShopId == shopId).Select(b => b.Code))} существует");
-            var good = MapperConfigurationExtension.GetMapper().Map<Good>(model);
+            var good = _mapper.Map<Good>(model);
             good.ShopId = shopId;
             _context.Add(good);
             _context.GoodCurrentBalances.AddRange(good.GoodPrices.Select(p => new GoodCurrentBalance { Good = good, ShopId = p.ShopId, CurrentCount = 0 }));
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
+            return _mapper.Map<GoodResponseModel>(good);
         }
 
         public async Task<GoodResponseModel> Update(int shopId, GoodCreateRequestModel model)
@@ -88,7 +90,7 @@ namespace OnlineShop2.Api.Services
             _context.Barcodes.RemoveRange(good.Barcodes.Where(b => deletedBarcodesId.Contains(b.Id)));
 
             await _context.SaveChangesAsync();
-            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
+            return _mapper.Map<GoodResponseModel>(good);
         }
 
         public async Task Delete(int id)
@@ -115,7 +117,7 @@ namespace OnlineShop2.Api.Services
                 .Include(g=>g.GoodPrices.Where(p=>p.ShopId==shopId))
                 .FirstAsync(g=>g.ShopId==shopId & g.Id==id);
             response.Price = response.GoodPrices.First().Price;
-            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(response);
+            return _mapper.Map<GoodResponseModel>(response);
         }
 
 
@@ -131,13 +133,13 @@ namespace OnlineShop2.Api.Services
             if(good.ShopId!=shopId)
                 throw new MyServiceException("Товар не найден в текущем магазине");
             good.Price=good.GoodPrices.Where(p=>p.ShopId==shopId).FirstOrDefault()?.Price ?? good.Price;
-            return MapperConfigurationExtension.GetMapper().Map<GoodResponseModel>(good);
+            return _mapper.Map<GoodResponseModel>(good);
         }
 
         public IEnumerable<GoodResponseModel> Search(string findText)
         {
             System.Diagnostics.Debug.WriteLine("findText - " + findText);
-            return MapperConfigurationExtension.GetMapper().Map<IEnumerable<GoodResponseModel>>(
+            return _mapper.Map<IEnumerable<GoodResponseModel>>(
                 _context.Goods.Where(g => !g.IsDeleted & EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
                 );
         }

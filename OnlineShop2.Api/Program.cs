@@ -15,6 +15,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics;
 using OnlineShop2.Api.Services.HostedService;
+using OnlineShop2.Api.Extensions.MapperProfiles;
 
 namespace OnlineShop2.Api
 {
@@ -51,6 +52,8 @@ namespace OnlineShop2.Api
             builder.Services.AddDbContext<OnlineShopContext>(option=>
                 option.UseNpgsql(builder.Configuration.GetConnectionString("db"))
             );
+
+            builder.Services.AddAutoMapper(typeof(MapperProfileDBModelToDto));
 
             builder.Services.AddServicesLegacy();
 
