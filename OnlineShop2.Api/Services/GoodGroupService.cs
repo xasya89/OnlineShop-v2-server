@@ -34,9 +34,6 @@ namespace OnlineShop2.Api.Services
         {
             var group = _mapper.Map<GoodGroup>(model);
             group.ShopId = shopId;
-            var shop = await _context.Shops.AsNoTracking().SingleAsync(s => s.Id == shopId);
-            if(shop.LegacyDbNum!=null)
-                group.LegacyId = await _legacy.Create(shop.LegacyDbNum ?? 0, model.Name);
             _context.Add(group);
             await _context.SaveChangesAsync();
             return _mapper.Map<GoodGroupCreateRequestModel>(group);

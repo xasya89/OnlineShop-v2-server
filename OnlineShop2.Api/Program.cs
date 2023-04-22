@@ -53,7 +53,7 @@ namespace OnlineShop2.Api
                 option.UseNpgsql(builder.Configuration.GetConnectionString("db"))
             );
 
-            builder.Services.AddAutoMapper(typeof(MapperProfileDBModelToDto));
+            builder.Services.AddAutoMapper(typeof(MapperProfileDBModelToDto), typeof(MapperProfileLegacy));
 
             builder.Services.AddServicesLegacy();
 
