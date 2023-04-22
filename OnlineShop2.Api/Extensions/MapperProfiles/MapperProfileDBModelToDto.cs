@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using OnlineShop2.Api.Models.CurrentBalance;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Api.Models.Inventory;
 using OnlineShop2.Api.Models.Shop;
@@ -28,6 +29,8 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<InventoryGroup, InventoryGroupResponseModel>();
             CreateMap<InventoryGood, InventoryGoodResponseModel>();
             CreateMap<InventorySummaryGood, InventorySummaryGoodResponseModel>();
+
+            CreateMap<GoodCurrentBalance, CurrentBalanceResponseModel>();
         }
     }
 }

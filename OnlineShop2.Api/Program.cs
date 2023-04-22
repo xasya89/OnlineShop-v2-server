@@ -64,6 +64,7 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<GoodService>();
             builder.Services.AddTransient<GoodGroupService>();
             builder.Services.AddTransient<GoodGroupLegacyService>();
+            builder.Services.AddTransient<CurrentBalanceService>();
 
             builder.Services.AddTransient<SupplierService>();
 
