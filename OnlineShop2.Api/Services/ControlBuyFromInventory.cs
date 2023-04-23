@@ -2,6 +2,8 @@
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb;
+using OnlineShop2.LegacyDb.Models;
+using OnlineShop2.LegacyDb.Repositories;
 using System.Threading;
 
 namespace OnlineShop2.Api.Services
@@ -11,13 +13,19 @@ namespace OnlineShop2.Api.Services
         private readonly ILogger<ControlBuyFromInventoryBackgroundService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IServiceProvider _service;
+        private readonly IUnitOfWorkLegacy _unitOfWork;
         private readonly string inventoryShema;
         private Timer? _timer = null;
-        public ControlBuyFromInventoryBackgroundService(ILogger<ControlBuyFromInventoryBackgroundService> logger, IServiceProvider service, IConfiguration configuration)
+        public ControlBuyFromInventoryBackgroundService(
+            ILogger<ControlBuyFromInventoryBackgroundService> logger, 
+            IServiceProvider service,
+            IConfiguration configuration,
+            IUnitOfWorkLegacy unitOfWork)
         {
             _logger = logger;
             _service = service;
             _configuration = configuration;
+            _unitOfWork = unitOfWork;
             inventoryShema = configuration.GetSection("InventoryShema").Value;
         }
 
@@ -155,13 +163,11 @@ namespace OnlineShop2.Api.Services
 
             var shop = context.Shops.Find(inventory.ShopId);
             if(shop!=null && shop.LegacyDbNum!=null)
-                using (var legacyDb = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shop.LegacyDbNum)))
-                {
-                    legacyDb.GoodCountCurrentRepository.SetCurrent(
-                        countSummaries.Where(x=>x.GoodLegacyId!=null).ToDictionary(x => (int)x.GoodLegacyId, x => x.CountCurrent)
-                        );
-                }
-
+            {
+                _unitOfWork.SetConnectionString(_configuration.GetConnectionString("shop" + shop.LegacyDbNum));
+                _unitOfWork.CurrentBalance.SetCurrent(countSummaries.Where(x => x.GoodLegacyId != null)
+                    .Select(x => new GoodCountBalanceCurrentLegacy { GoodId = x.GoodLegacyId ?? 0, Count = x.CountCurrent }).ToList());
+            }
 
             context.SaveChanges();
 

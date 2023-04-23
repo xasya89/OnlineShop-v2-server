@@ -17,15 +17,17 @@ namespace OnlineShop2.Api.Services.Legacy
         private readonly OnlineShopContext _context;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWorkLegacy _unitOfWork;
         private string inventoryShema = "";
 
         private static string INVENTORY_SHEMA_COUNT_ON_START = "CurrentBalanceOnStart";
         private static string INVENTORY_SHEMA_AFTER_CLOSE = "GetBalanceAfterCloseShift";
-        public InventoryLegacyService(OnlineShopContext context, IConfiguration configuration, IMapper mapper)
+        public InventoryLegacyService(OnlineShopContext context, IConfiguration configuration, IMapper mapper, IUnitOfWorkLegacy unitOfWork)
         {
             _context = context;
             _configuration = configuration;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
             inventoryShema = configuration.GetSection("InventoryShema").Value;
         }
 
@@ -55,11 +57,9 @@ namespace OnlineShop2.Api.Services.Legacy
             {
                 if (shift != null)
                     throw new MyServiceException("Есть не закрытая смена");
-                using (var unitOfWOrkLegacy = new UnitOfWorkLegacyOld(_configuration.GetConnectionString("shop" + shopNumLegacy)))
-                {
-                    var repository = unitOfWOrkLegacy.GoodCountCurrentRepository;
-                    await synchBalance(repository, shopId); ;
-                }
+                _unitOfWork.SetConnectionString(_configuration.GetConnectionString("shop" + shopNumLegacy));
+                var repository = _unitOfWork.CurrentBalance;
+                await synchBalance(repository, shopId); 
                 var curGoods = _context.GoodCurrentBalances.Include(b => b.Good).Where(b => !b.Good.IsDeleted).AsNoTracking();
                 foreach (var cur in curGoods)
                     _context.Add(new InventorySummaryGood
@@ -80,7 +80,7 @@ namespace OnlineShop2.Api.Services.Legacy
             return new { id = inventory.Id };
         }
 
-        private async Task synchBalance(GoodCurrentBalanceLegacyRepository repository, int shopId)
+        private async Task synchBalance(ICurrentBalanceRepositoryLegacy repository, int shopId)
         {
             var legacy = await repository.GetCurrent();
             var goods = await _context.Goods.AsNoTracking().ToListAsync();

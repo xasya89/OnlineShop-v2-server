@@ -14,6 +14,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         IGoodReporitoryLegacy GoodRepository { get; }
         IGoodGroupRepositoryLegacy GoodGroupRepository { get; }
         IShiftRepositoryLegacy ShiftRepository { get; }
+        ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
     }
     public interface IGeneralRepositoryLegacy<T> where T: class
     {

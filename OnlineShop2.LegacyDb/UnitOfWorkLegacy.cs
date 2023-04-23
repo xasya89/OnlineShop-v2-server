@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace OnlineShop2.LegacyDb
 {
+    //TODO: Удалить метод
     public class UnitOfWorkLegacyOld : IDisposable
     {
         private MySqlConnection _connection;
         private GoodLegacyRepository _goodRepository;
-        private GoodCurrentBalanceLegacyRepository _goodCountCurrentRepository;
         private ShiftLegacyRepository _shiftLegacyRepository;
         public GoodLegacyRepository GoodRepository
         {
@@ -21,15 +21,6 @@ namespace OnlineShop2.LegacyDb
                 if (_goodRepository == null)
                     _goodRepository = new GoodLegacyRepository(_connection);
                 return _goodRepository;
-            }
-        }
-        public GoodCurrentBalanceLegacyRepository GoodCountCurrentRepository
-        {
-            get
-            {
-                if (_goodCountCurrentRepository == null)
-                    _goodCountCurrentRepository = new GoodCurrentBalanceLegacyRepository(_connection);
-                return _goodCountCurrentRepository;
             }
         }
         public ShiftLegacyRepository ShiftLegacyRepository

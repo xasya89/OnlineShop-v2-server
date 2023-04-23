@@ -16,17 +16,20 @@ namespace OnlineShop2.LegacyDb.Repositories
             GoodGroupRepository.SetConnectionString(connectionString);
             GoodRepository.SetConnectionString(connectionString);
             ShiftRepository.SetConnectionString(connectionString);
+            CurrentBalance.SetConnectionString(connectionString);
         }
 
         public UnitOfWorkLegacy(ISupplierRepositoryLegacy supplier, 
             IGoodGroupRepositoryLegacy goodGroup, 
             IGoodReporitoryLegacy goodReporitory,
-            IShiftRepositoryLegacy shiftRepository)
+            IShiftRepositoryLegacy shiftRepository,
+            ICurrentBalanceRepositoryLegacy currentBalance)
         {
             SupplierRepository= supplier;
             GoodGroupRepository = goodGroup;
             GoodRepository = goodReporitory;
             ShiftRepository = shiftRepository;
+            CurrentBalance = currentBalance;
         }
 
         public ISupplierRepositoryLegacy SupplierRepository { get; }
@@ -35,5 +38,6 @@ namespace OnlineShop2.LegacyDb.Repositories
         public IGoodReporitoryLegacy GoodRepository { get; }
 
         public IShiftRepositoryLegacy ShiftRepository { get; }
+        public ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
     }
 }
