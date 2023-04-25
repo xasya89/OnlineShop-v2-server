@@ -20,7 +20,7 @@ namespace OnlineShop2.Api.Controllers.CurrentBalance
         }
 
         [HttpGet("/api/{shopId}/currentbalance")]
-        public async Task<IEnumerable<CurrentBalanceResponseModel>> Get(int shopId, [FromQuery] bool skipDeleted, [FromQuery(Name = "groups")] int[] groups, [FromQuery] int[] suppliers) 
-            => await _service.GetBalance(shopId, skipDeleted, groups, suppliers);
+        public async Task<IEnumerable<CurrentBalanceResponseModel>> Get(int shopId, [FromQuery] bool skipDeleted, [FromQuery(Name = "groups")] int[] groups, [FromQuery] int[] suppliers, [FromQuery] bool viewNegativeBalance = false) 
+            => await _service.GetBalance(shopId, skipDeleted, viewNegativeBalance, groups, suppliers);
     }
 }

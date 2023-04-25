@@ -13,7 +13,7 @@ namespace OnlineShop2.Api.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<CurrentBalanceResponseModel>> GetBalance (int shopId, bool skipDeleted, int[] groups, int[] suppliers)
+        public async Task<IEnumerable<CurrentBalanceResponseModel>> GetBalance (int shopId, bool skipDeleted, bool viewNegativeBalance, int[] groups, int[] suppliers)
         {
             var query = _context.GoodCurrentBalances
                 .Include(b => b.Good)
@@ -26,6 +26,8 @@ namespace OnlineShop2.Api.Services
                 query = query.Where(g => groups.Contains(g.Good.GoodGroupId));
             if (suppliers?.Length > 0)
                 query = query.Where(g => suppliers.Contains(g.Good.SupplierId ?? 0));
+            if (!viewNegativeBalance)
+                query = query.Where(g => g.CurrentCount > 0);
             return await query.AsNoTracking().Select(b=>new CurrentBalanceResponseModel
             {
                 Id=b.Id,

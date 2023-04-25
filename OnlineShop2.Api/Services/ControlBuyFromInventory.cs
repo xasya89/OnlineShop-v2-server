@@ -84,10 +84,9 @@ namespace OnlineShop2.Api.Services
             if (checks.Count == 0) return;
             var goodsIdInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
                 .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
-                .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId).Select(g=>g.Key);
-            context.InventoryAppendChecks.AddRange(
-                checks.SelectMany(c => c.CheckGoods)
-                .Where(c => !goodsIdInInventory.Contains(c.GoodId))
+                .SelectMany(g => g.InventoryGoods).GroupBy(g => g.GoodId).Select(g=>g.Key).ToList();
+            var appendChecks = checks.SelectMany(c => c.CheckGoods)
+                .Where(c => goodsIdInInventory.Contains(c.GoodId))
                 .Select(c =>
                 new InventoryAppendCheck
                 {
@@ -96,7 +95,8 @@ namespace OnlineShop2.Api.Services
                     CheckSellId = c.CheckSellId,
                     GoodId = c.GoodId,
                     Count = -1 * c.Count
-                }));
+                });
+            context.InventoryAppendChecks.AddRange(appendChecks);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace OnlineShop2.Api.Services
                                      GoodId = balance.GoodId,
                                      CountOld = balance.CurrentCount,
                                      CountCurrent = (sub?.countFact ?? 0) + (checkGoods.Where(x=>x.goodId==balance.GoodId).FirstOrDefault()?.count ?? 0),
-                                     Price = balance.Good.GoodPrices.First().Price
+                                     Price = balance.Good.GoodPrices.FirstOrDefault()?.Price ?? 0
                                  };
 
             var transaction = context.Database.BeginTransaction();
