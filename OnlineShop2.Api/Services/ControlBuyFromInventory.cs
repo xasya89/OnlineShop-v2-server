@@ -73,14 +73,17 @@ namespace OnlineShop2.Api.Services
         {
             var inventoryAppendedChecksId = await context.InventoryAppendChecks
                 .Where(c=>c.InventoryId==inventory.Id).GroupBy(c=>c.CheckSellId).AsNoTracking().Select(c=>c.Key).ToListAsync();
-
-            var checks = await context.CheckSells.Include(c => c.CheckGoods).Include(c => c.Shift)
+            
+            var checks = await context.CheckSells.Include(c => c.CheckGoods)
                         .Where(c => 
                             !inventoryAppendedChecksId.Contains(c.Id) & 
                             c.ShiftId>=inventory.CurrentShiftId & 
-                            c.Shift.ShopId==inventory.ShopId &
-                            c.DateCreate > inventory.Start)
+                            c.Shift.ShopId==inventory.ShopId 
+                            /*DateTime.Compare(inventory.Start, c.DateCreate)<=0*/
+                            /*c.DateCreate > inventory.Start*/)
                         .AsNoTracking().ToListAsync();
+            //checks = await context.CheckSells.FromSql($"SELECT cs.* FROM public.\"CheckSells\" cs\r\nINNER JOIN public.\"CheckGoods\" cg ON cs.\"Id\"=cg.\"CheckSellId\"\r\nINNER JOIN public.\"Shifts\" s ON cs.\"ShiftId\"=s.\"Id\"\r\nWHERE \"ShiftId\">=824 AND s.\"ShopId\"=1 AND \"DateCreate\">= to_timestamp ('27.04.2023 20:38','DD.MM.YYYY HH24:MI')").ToListAsync();
+            checks = checks.Where(c => c.DateCreate >= inventory.Start).ToList();
             if (checks.Count == 0) return;
             var goodsIdInInventory = (await context.InventoryGroups.Include(g => g.InventoryGoods)
                 .Where(g => g.InventoryId == inventory.Id).AsNoTracking().ToListAsync())
