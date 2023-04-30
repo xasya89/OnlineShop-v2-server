@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using MySql.Data.MySqlClient;
+using OnlineShop2.LegacyDb.Infrastructure;
 using OnlineShop2.LegacyDb.Models;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,8 @@ namespace OnlineShop2.LegacyDb.Repositories
             using (MySqlConnection con = new MySqlConnection(_connectionString))
             {
                 con.Open();
+                if (await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM Goods WHERE GoodGroupId=" + id) > 0)
+                    throw new MyServiceLegacyException($"Невозможно удалить группу id - {id}. В ней содержатся товары");
                 await con.ExecuteAsync("DELETE FROM goodgroups WHERE id=" + id);
             }
         }

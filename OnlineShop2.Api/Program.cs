@@ -59,11 +59,9 @@ namespace OnlineShop2.Api
 
             builder.Services.AddTransient<AuthService>();
             builder.Services.AddTransient<ShopService>();
-            builder.Services.AddTransient<SynchLegacyService>();
             builder.Services.AddTransient<InventoryLegacyService>();
             builder.Services.AddTransient<GoodService>();
             builder.Services.AddTransient<GoodGroupService>();
-            builder.Services.AddTransient<GoodGroupLegacyService>();
             builder.Services.AddTransient<CurrentBalanceService>();
 
             builder.Services.AddTransient<SupplierService>();

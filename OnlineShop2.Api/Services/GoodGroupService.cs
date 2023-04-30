@@ -5,6 +5,8 @@ using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Api.Services.Legacy;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb.Models;
+using OnlineShop2.LegacyDb.Repositories;
 
 namespace OnlineShop2.Api.Services
 {
@@ -14,14 +16,14 @@ namespace OnlineShop2.Api.Services
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly OnlineShopContext _context;
-        private readonly GoodGroupLegacyService _legacy;
+        private readonly IGoodGroupRepositoryLegacy _repositoryLegacy;
 
-        public GoodGroupService(IConfiguration configuration, IMapper mapper, OnlineShopContext context, GoodGroupLegacyService legacy)
+        public GoodGroupService(IConfiguration configuration, IMapper mapper, OnlineShopContext context, IUnitOfWorkLegacy unitOfWorkLegacy)
         {
             _configuration = configuration;
             _context = context;
-            _legacy = legacy;
             _mapper = mapper;
+            _repositoryLegacy = unitOfWorkLegacy.GoodGroupRepository;
             ownerGoodForShops = configuration.GetValue<bool>("OwnerGoodForShops");
         }
 
@@ -35,7 +37,15 @@ namespace OnlineShop2.Api.Services
             var group = _mapper.Map<GoodGroup>(model);
             group.ShopId = shopId;
             _context.Add(group);
-            await _context.SaveChangesAsync();
+            _context.SaveChangesAsync(shopId);//.SaveChangesAsync();
+
+            var shop = _context.Shops.Find(shopId);
+            if (shop.LegacyDbNum != null)
+            {
+                _repositoryLegacy.SetConnectionString(_configuration.GetConnectionString("shop" +shop.LegacyDbNum));
+                await _repositoryLegacy.AddAsync(_mapper.Map<GoodGroupLegacy>(group));
+            }
+
             return _mapper.Map<GoodGroupCreateRequestModel>(group);
         }
 

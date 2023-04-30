@@ -13,12 +13,10 @@ namespace OnlineShop2.Api.Controllers.Inventory
     //[Authorize]
     public class InventoryController : ControllerBase
     {
-        private readonly SynchLegacyService _service;
         private readonly InventoryLegacyService _inventoryService;
         private readonly ShopService _shopService;
-        public InventoryController(SynchLegacyService service, InventoryLegacyService inventoryService, ShopService shopService) 
+        public InventoryController( InventoryLegacyService inventoryService, ShopService shopService) 
         {
-            _service = service;
             _inventoryService = inventoryService;
             _shopService = shopService;
         }
@@ -31,7 +29,6 @@ namespace OnlineShop2.Api.Controllers.Inventory
         public async Task<IActionResult> Start(int shopId, [FromBody] InventoryStartRequestModel model)
         {
             int shopLegacy = _shopService.GetShop(shopId).LegacyDbNum ?? 0;
-            await _service.SynchGoods(shopId, shopLegacy);
             var result = await _inventoryService.Start(shopId, shopLegacy, model);
             return Ok(result);
         }

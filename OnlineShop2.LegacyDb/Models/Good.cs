@@ -1,4 +1,4 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Dao;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace OnlineShop2.LegacyDb.Models
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public List<Good> Goods { get; set; }
+        public List<GoodLegacy> Goods { get; set; }
     }
 
     public class SupplierLegacy
@@ -20,7 +20,7 @@ namespace OnlineShop2.LegacyDb.Models
         public int Id { get; set; }
         public string Name { get; set; }
         public string Inn { get; set; }
-        public List<Good> Goods { get; set; }
+        public List<GoodLegacy> Goods { get; set; }
     }
 
     public class GoodLegacy

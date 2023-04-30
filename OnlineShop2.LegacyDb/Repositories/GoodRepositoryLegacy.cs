@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using MySql.Data.MySqlClient;
-using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb.Models;
 using Org.BouncyCastle.Crypto.Tls;
 using System;

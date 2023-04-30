@@ -1,4 +1,5 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Dao;
+using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Models.Goods
 {

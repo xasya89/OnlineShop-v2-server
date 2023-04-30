@@ -43,6 +43,8 @@ public partial class OnlineShopContext : DbContext
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
     }
+
+    //private IUnitOfWorkLegacy 
     /*
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
@@ -68,5 +70,11 @@ public partial class OnlineShopContext : DbContext
             if (entittyProp != null)
                 entity.Property(entittyProp.Name).CurrentValue = prop.GetValue(model);
         }
+    }
+
+    public async void SaveChangesAsync(int shopId)
+    {
+        var newEntities = ChangeTracker.Entries().Where(x => x.State == EntityState.Added);
+        await SaveChangesAsync();
     }
 }

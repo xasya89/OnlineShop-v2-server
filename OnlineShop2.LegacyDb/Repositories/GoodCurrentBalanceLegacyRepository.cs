@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using MySql.Data.MySqlClient;
 using Mysqlx.Resultset;
-using OnlineShop2.Database.Models;
-using OnlineShop2.LegacyDb.Infrastructure.MapperConfigurations;
 using OnlineShop2.LegacyDb.Models;
 using System;
 using System.Collections.Generic;

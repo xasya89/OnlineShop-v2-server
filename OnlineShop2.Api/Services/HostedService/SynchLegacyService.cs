@@ -12,13 +12,13 @@ namespace OnlineShop2.Api.Services.HostedService
 {
     public class SynchLegacyHostedService : IHostedService, IDisposable
     {
-        private readonly ILogger<ShiftSynchBackgroundService> _logger;
         private System.Threading.Timer? _timer = null;
+        private readonly ILogger<SynchLegacyHostedService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IServiceProvider _service;
         private readonly IMapper _mapper;
 
-        public SynchLegacyHostedService(ILogger<ShiftSynchBackgroundService> logger, IConfiguration configuration, IServiceProvider service, IMapper mapper)
+        public SynchLegacyHostedService(ILogger<SynchLegacyHostedService> logger, IConfiguration configuration, IServiceProvider service, IMapper mapper)
         {
             _logger = logger;
             _configuration = configuration;
