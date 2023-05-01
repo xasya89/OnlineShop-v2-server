@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.Configuration;
 using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Database;
@@ -70,11 +71,5 @@ public partial class OnlineShopContext : DbContext
             if (entittyProp != null)
                 entity.Property(entittyProp.Name).CurrentValue = prop.GetValue(model);
         }
-    }
-
-    public async void SaveChangesAsync(int shopId)
-    {
-        var newEntities = ChangeTracker.Entries().Where(x => x.State == EntityState.Added);
-        await SaveChangesAsync();
     }
 }

@@ -5,8 +5,11 @@ using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb.Models;
+using OnlineShop2.LegacyDb.Repositories;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace OnlineShop2.Api.Services
 {
@@ -15,13 +18,15 @@ namespace OnlineShop2.Api.Services
         private readonly IConfiguration _configuration;
         private readonly OnlineShopContext _context;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWorkLegacy _unitOfWorkLegacy;
         private bool ownerGoodForShops = false;
-        public GoodService(OnlineShopContext context, IConfiguration configuration, IMapper mapper)
+        public GoodService(OnlineShopContext context, IConfiguration configuration, IMapper mapper, IUnitOfWorkLegacy unitOfWorkLegacy)
         {
             _configuration = configuration;
             ownerGoodForShops = _configuration.GetValue<bool>("OwnerGoodForShops");
             _context = context;
             _mapper = mapper;
+            _unitOfWorkLegacy = unitOfWorkLegacy;
         }
 
         public async Task<dynamic> GetAll(int shopId, int[] groups, bool skipDeleted, string? find, int page=1, int count=100)
@@ -69,8 +74,9 @@ namespace OnlineShop2.Api.Services
                 throw new MyServiceException($"Товар с штрих кодом {string.Join(" ", barcodeInDb.Where(b => b.Good.ShopId == shopId).Select(b => b.Code))} существует");
             var good = _mapper.Map<Good>(model);
             good.ShopId = shopId;
-            _context.Add(good);
+            var entity = _context.Add(good);
             _context.GoodCurrentBalances.AddRange(good.GoodPrices.Select(p => new GoodCurrentBalance { Good = good, ShopId = p.ShopId, CurrentCount = 0 }));
+            await saveChangedLegacy(entity);
             await _context.SaveChangesAsync();
             return _mapper.Map<GoodResponseModel>(good);
         }
@@ -80,6 +86,7 @@ namespace OnlineShop2.Api.Services
             var good = await _context.Goods.Include(g=>g.GoodPrices).Include(g=>g.Barcodes).Where(g=>g.Id==model.Id).FirstOrDefaultAsync();
             if (good == null) throw new MyServiceException($"Товар с id {model.Id} не найден");
 
+            _context.Entry(good).State = EntityState.Modified;
             _context.ChangeEntityByDTO<GoodCreateRequestModel>(_context.Entry(good), model);
             good.GoodPrices.ForEach(price => _context.ChangeEntityByDTO<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
             good.Barcodes.ForEach(barcode => _context.ChangeEntityByDTO<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
@@ -88,7 +95,7 @@ namespace OnlineShop2.Api.Services
 
             var deletedBarcodesId = model.Barcodes.Where(b => b.IsDeleted).Select(b => b.Id);
             _context.Barcodes.RemoveRange(good.Barcodes.Where(b => deletedBarcodesId.Contains(b.Id)));
-
+            await saveChangedLegacy(_context.Entry(good));
             await _context.SaveChangesAsync();
             return _mapper.Map<GoodResponseModel>(good);
         }
@@ -142,6 +149,63 @@ namespace OnlineShop2.Api.Services
             return _mapper.Map<IEnumerable<GoodResponseModel>>(
                 _context.Goods.Where(g => !g.IsDeleted & EF.Functions.Like(g.Name.ToLower(), $"%{findText.ToLower()}%")).Take(20)
                 );
+        }
+
+        private async Task saveChangedLegacy(EntityEntry entity)
+        {
+            var good = entity.Entity as Good;
+            var shop = _context.Shops.Find(good.ShopId);
+            if (shop.LegacyDbNum == null)
+                return;
+            _unitOfWorkLegacy.SetConnectionString(_configuration.GetConnectionString("shop" + shop.LegacyDbNum));
+            var groups = await _context.GoodsGroups.Where(gr => gr.ShopId == shop.Id).AsNoTracking().ToListAsync();
+            var supplers = await _context.Suppliers.Where(s => s.ShopId == shop.Id).AsNoTracking().ToListAsync();
+            var goodLegacy = _mapper.Map<GoodLegacy>(good);
+            goodLegacy.Id = good.LegacyId ?? 0;
+            goodLegacy.GoodGroupId = groups.Find(g => g.Id == good.GoodGroupId).LegacyId ?? 0;
+            if (goodLegacy.SupplierId != null)
+                goodLegacy.SupplierId = supplers.Find(s => s.Id == goodLegacy.SupplierId).LegacyId ?? 0;
+
+            if (entity.State == EntityState.Added)
+                good.LegacyId = await _unitOfWorkLegacy.GoodRepository.AddAsync(goodLegacy);
+            if (entity.State == EntityState.Modified & good.LegacyId != null)
+                await _unitOfWorkLegacy.GoodRepository.UpdateAsync(goodLegacy);
+            if (entity.State == EntityState.Deleted & good.LegacyId != null)
+                await _unitOfWorkLegacy.GoodRepository.DeleteAsync(good.LegacyId ?? 0);
+        }
+
+        //TODO: Перенести метод сравнения объектов
+        private void compareAndChange(object original, object dist, bool isNotChangeId = true)
+        {
+            var originalType = original.GetType();
+            var distProps = dist.GetType().GetProperties();
+            var simpleTypes = new Type[] { typeof(int), typeof(string), typeof(decimal), typeof(bool), typeof(Guid) };
+            string[] collectionsName = new[] { nameof(IList), nameof(ICollection), nameof(IEnumerable) };
+
+            var propsOriginal = original.GetType().GetProperties();
+            if (isNotChangeId)
+                propsOriginal = propsOriginal.Where(p => p.Name.ToLower() != "id").ToArray();
+            var simpleProps = propsOriginal.Where(p => p.PropertyType.GetInterfaces().Count(x => collectionsName.Contains(x.Name)) == 0);
+            foreach (var prop in simpleProps)
+            {
+                var oldValue = prop.GetValue(original);
+                var distprop = distProps.Where(p => p.Name == prop.Name);
+                distprop?.First().SetValue(dist, oldValue);
+            }
+
+            var collectionsProp = propsOriginal.Where(p => p.PropertyType != typeof(string) & p.PropertyType.GetInterfaces().Count(x => collectionsName.Contains(x.Name)) != 0);
+            foreach (var prop in collectionsProp)
+            {
+                var items = prop.GetValue(original, null) as IEnumerable;
+                foreach (var item in items)
+                    //compareAndChange()
+                    Console.WriteLine(string.Join(",", item.GetType().GetProperties().Select(x => x.Name)));
+                Type type = prop.PropertyType.GetGenericArguments()[0];
+                Type listType = typeof(List<>).MakeGenericType(type);
+
+                var val = prop.GetValue(original);
+
+            }
         }
     }
 }
