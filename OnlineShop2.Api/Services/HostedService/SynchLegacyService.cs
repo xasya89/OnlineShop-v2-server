@@ -133,20 +133,11 @@ namespace OnlineShop2.Api.Services.HostedService
                 context.Entry(changeGroup.db).State = EntityState.Modified;
                 changeGroup.db.Name = changeGroup.name;
             }
-
-            var groupsWithNullLegacyId = await context.GoodsGroups.Where(g => g.LegacyId == null).ToListAsync();
-            var legacyList = await unitOfWork.GoodGroupRepository.AddRangeAsync(_mapper.Map<IEnumerable<GoodGroupLegacy>>(groupsWithNullLegacyId));
-            int i = 0;
-            foreach (var legacy in legacyList)
-                groupsWithNullLegacyId[i++].LegacyId = legacy.Id;
-
             await context.SaveChangesAsync();
 
             foreach (var group in newGroups)
                 context.Entry(group).State = EntityState.Detached; 
             foreach (var group in changedGoodGroups)
-                context.Entry(group).State = EntityState.Detached;
-            foreach (var group in groupsWithNullLegacyId)
                 context.Entry(group).State = EntityState.Detached;
         }
 
@@ -207,32 +198,12 @@ namespace OnlineShop2.Api.Services.HostedService
                 }
             }
 
-            //Добавим в legacy db созданные товары
-            var goodWithNullLegacy = goods.Where(g => g.LegacyId == null).ToList();
-            var goodsLegacyFromAdded = _mapper.Map<IEnumerable<GoodLegacy>>(goodWithNullLegacy);
-            foreach(var goodLegacy in goodsLegacyFromAdded)
-            {
-                goodLegacy.GoodGroupId = groups.Single(g => g.Id == goodLegacy.GoodGroupId).LegacyId ?? 0;
-                goodLegacy.SupplierId = suppliers.FirstOrDefault(g => g.Id == goodLegacy.SupplierId)?.LegacyId;
-            }
-            var goodLegacyAdded = await unitOfWork.GoodRepository.AddRangeAsync(goodsLegacyFromAdded);
-            int i = 0;
-            foreach(var legacy in  goodLegacyAdded)
-            {
-                context.Entry(goodWithNullLegacy[i]).State = EntityState.Modified;
-                goodWithNullLegacy[i].LegacyId = legacy.Id;
-                i++;
-            }
-
             await context.SaveChangesAsync();
 
             foreach (var good in newGoods)
                 context.Entry(good).State = EntityState.Detached;
             foreach (var good in changeGoods)
                 context.Entry(good).State = EntityState.Detached;
-            foreach (var good in goodWithNullLegacy)
-                context.Entry(good).State = EntityState.Detached;
-
         }
 
         private bool goodCompare(Good subGood, GoodLegacy goodLegacy) =>

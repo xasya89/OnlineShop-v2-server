@@ -91,9 +91,13 @@ namespace OnlineShop2.Api.Services
             good.GoodPrices.ForEach(price => _context.ChangeEntityByDTO<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
             good.Barcodes.ForEach(barcode => _context.ChangeEntityByDTO<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
             _context.GoodPrices.AddRange(model.GoodPrices.Where(p => p.Id == 0).Select(p => new GoodPrice { GoodId=model.Id,  ShopId = p.ShopId, Price = p.Price }) );
-            _context.Barcodes.AddRange(model.Barcodes.Where(b => b.Id == 0).Select(b => new Barcode { Good = good, Code = b.Code }));
+            var newBarcodes = model.Barcodes.Where(b => b.Id == 0 & !b.IsDeleted).Select(b => new Barcode { Good = good, Code = b.Code });
+            var countExistCode = await _context.Barcodes.Where(b => newBarcodes.Select(x => x.Code).Contains(b.Code)).CountAsync();
+            if (countExistCode > 0)
+                throw new MyServiceException("Штрих код уже существует");
+            _context.Barcodes.AddRange(newBarcodes);
 
-            var deletedBarcodesId = model.Barcodes.Where(b => b.IsDeleted).Select(b => b.Id);
+            var deletedBarcodesId = model.Barcodes.Where(b => b.Id!=0 & b.IsDeleted).Select(b => b.Id);
             _context.Barcodes.RemoveRange(good.Barcodes.Where(b => deletedBarcodesId.Contains(b.Id)));
             await saveChangedLegacy(_context.Entry(good));
             await _context.SaveChangesAsync();
@@ -102,7 +106,7 @@ namespace OnlineShop2.Api.Services
 
         public async Task Delete(int id)
         {
-            var good = await _context.Goods.FindAsync(id);
+            var good = await _context.Goods.Include(g=>g.GoodPrices).Include(g=>g.Barcodes).Where(g=>g.Id==id).FirstOrDefaultAsync();
             if (good == null) throw new MyServiceException($"Товар с id {id} не найден");
 
             //Проверим существование товара в дургих документах
@@ -113,7 +117,7 @@ namespace OnlineShop2.Api.Services
                 _context.Remove(good);
             else
                 good.IsDeleted = true;
-
+            await saveChangedLegacy(_context.Entry(good));
             await _context.SaveChangesAsync();
         }
 
@@ -158,6 +162,13 @@ namespace OnlineShop2.Api.Services
             if (shop.LegacyDbNum == null)
                 return;
             _unitOfWorkLegacy.SetConnectionString(_configuration.GetConnectionString("shop" + shop.LegacyDbNum));
+
+            if (entity.State == EntityState.Deleted & good.LegacyId != null)
+            {
+                await _unitOfWorkLegacy.GoodRepository.DeleteAsync(good.LegacyId ?? 0);
+                return;
+            }
+
             var groups = await _context.GoodsGroups.Where(gr => gr.ShopId == shop.Id).AsNoTracking().ToListAsync();
             var supplers = await _context.Suppliers.Where(s => s.ShopId == shop.Id).AsNoTracking().ToListAsync();
             var goodLegacy = _mapper.Map<GoodLegacy>(good);
@@ -165,13 +176,12 @@ namespace OnlineShop2.Api.Services
             goodLegacy.GoodGroupId = groups.Find(g => g.Id == good.GoodGroupId).LegacyId ?? 0;
             if (goodLegacy.SupplierId != null)
                 goodLegacy.SupplierId = supplers.Find(s => s.Id == goodLegacy.SupplierId).LegacyId ?? 0;
+            goodLegacy.Barcodes = _mapper.Map<List<BarCodeLegacy>>(good.Barcodes.Where(b => _context.Entry(b).State != EntityState.Deleted).ToList());
 
             if (entity.State == EntityState.Added)
                 good.LegacyId = await _unitOfWorkLegacy.GoodRepository.AddAsync(goodLegacy);
             if (entity.State == EntityState.Modified & good.LegacyId != null)
                 await _unitOfWorkLegacy.GoodRepository.UpdateAsync(goodLegacy);
-            if (entity.State == EntityState.Deleted & good.LegacyId != null)
-                await _unitOfWorkLegacy.GoodRepository.DeleteAsync(good.LegacyId ?? 0);
         }
 
         //TODO: Перенести метод сравнения объектов

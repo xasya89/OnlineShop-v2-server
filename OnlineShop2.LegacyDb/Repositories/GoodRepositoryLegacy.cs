@@ -81,13 +81,37 @@ namespace OnlineShop2.LegacyDb.Repositories
                 good.Id= await AddAsync(good,shopLegacyId);
             return entities.ToList();
         }
-        //TODO: Если товар имеет связи с другими документами, то установим значение isDelete = true
+        
         public async Task DeleteAsync(int id)
         {
             using (MySqlConnection con = new MySqlConnection(_connectionString))
             {
                 con.Open();
-                await con.ExecuteAsync("DELETE FROM Goods WHERE id=" + id);
+                bool flagDelete = false;
+                int count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM arrivalgoods WHERE GoodId=" + id);
+                flagDelete = count > 0 ? flagDelete : true;
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM checkgoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM stocktakinggoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM writeofgoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    await con.ExecuteAsync("UPDATE Goods SET IsDeleted=1 WHERE id=" + id);
+                    await con.ExecuteAsync("DELETE FROM barcodes WHERE GoodId=" + id);
+                }
+                else
+                    await con.ExecuteAsync("DELETE FROM Goods WHERE id=" + id);
             }
         }
 
