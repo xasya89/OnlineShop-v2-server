@@ -14,6 +14,7 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<Shop, ShopResponseModel>();
             CreateMap<GoodGroup, GoodGroupResponseModel>();
             CreateMap<Supplier, SupplierResponseModel>();
+            CreateMap<SupplierResponseModel, Supplier>();
 
             CreateMap<GoodGroup, GoodGroupCreateRequestModel>();
             CreateMap<Good, GoodResponseModel>();

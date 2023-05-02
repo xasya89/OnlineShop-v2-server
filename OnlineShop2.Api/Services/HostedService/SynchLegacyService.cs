@@ -95,19 +95,11 @@ namespace OnlineShop2.Api.Services.HostedService
                 context.Entry(changeSupplier.db).State = EntityState.Modified;
                 changeSupplier.db.Name = changeSupplier.name;
             }
-            //Добавим в legacy db созданных поставщиков
-            var suppliersWithNullLegacyId = await context.Suppliers.Where(s => s.LegacyId == null).ToListAsync();
-            var suppliersLegacyAdded = await unitOfWork.SupplierRepository.AddRangeAsync(_mapper.Map<IEnumerable<SupplierLegacy>>(suppliersWithNullLegacyId));
-            int i = 0;
-            foreach (var supplierAdded in suppliersLegacyAdded)
-                suppliersWithNullLegacyId[i++].LegacyId = supplierAdded.Id;
 
             await context.SaveChangesAsync();
             foreach (var supplier in newSuppliers)
                 context.Entry(supplier).State = EntityState.Detached;
             foreach (var supplier in newSuppliers)
-                context.Entry(supplier).State = EntityState.Detached;
-            foreach (var supplier in suppliersLegacyAdded)
                 context.Entry(supplier).State = EntityState.Detached;
         }
 
