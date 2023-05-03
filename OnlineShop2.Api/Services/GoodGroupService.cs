@@ -45,12 +45,10 @@ namespace OnlineShop2.Api.Services
 
         public async Task<GoodGroupCreateRequestModel> Update(GoodGroupCreateRequestModel model)
         {
-            var group = await _context.GoodsGroups.FindAsync(model.Id);
-            if (group == null) throw new MyServiceException($"Группа с id {model.Id} не найдена");
-            _context.ChangeEntityByDTO<GoodGroupCreateRequestModel>(_context.Entry(group), model);
-            await SaveChangeLegacy(_context.Entry(group));
+            var entity = _context.GoodsGroups.Update(_mapper.Map<GoodGroup>(model));
+            await SaveChangeLegacy(entity);
             await _context.SaveChangesAsync();
-            return _mapper.Map<GoodGroupCreateRequestModel>(group);
+            return _mapper.Map<GoodGroupCreateRequestModel>(model);
         }
 
         public async Task Delete(int id)
@@ -64,7 +62,6 @@ namespace OnlineShop2.Api.Services
 
         private async Task SaveChangeLegacy(EntityEntry entity )
         {
-
             var goodGroup = entity.Entity as GoodGroup;
             var shop = _context.Shops.AsNoTracking().First(x => x.Id == goodGroup.ShopId);
             if (shop.LegacyDbNum == null)

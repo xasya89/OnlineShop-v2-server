@@ -25,7 +25,7 @@ namespace OnlineShop2.Api.Controllers.Goods
 
         [HttpPut("/api/{shopId}/goodgroups/{id}")]
         public async Task<GoodGroupCreateRequestModel> Update(int shopId, [FromBody] GoodGroupCreateRequestModel model) =>
-            await _service.Create(shopId, model);
+            await _service.Update(model);
 
         [HttpDelete("/api/{shopId}/goodgroups/{id}")]
         public async Task Delete(int id) =>

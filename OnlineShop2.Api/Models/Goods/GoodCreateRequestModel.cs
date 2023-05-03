@@ -8,6 +8,7 @@ namespace OnlineShop2.Api.Models.Goods
         public int Id { get; set; }
         public string Name { get; set; }
         public int ShopId { get; set; }
+        public int? LegacyId { get; set; }
     }
 
     public class GoodCreateRequestModel
