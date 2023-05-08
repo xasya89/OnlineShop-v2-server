@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OnlineShop2.Dao\OnlineShop2.Dao.csproj" />
     <ProjectReference Include="..\OnlineShop2.LegacyDb\OnlineShop2.LegacyDb.csproj" />
   </ItemGroup>
 

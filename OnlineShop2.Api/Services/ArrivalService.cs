@@ -1,8 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Arrival;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb.Models;
+using OnlineShop2.LegacyDb.Repositories;
 using System.Collections;
 
 namespace OnlineShop2.Api.Services
@@ -12,12 +16,16 @@ namespace OnlineShop2.Api.Services
         private readonly ILogger<ArrivalService> _logger;
         public readonly IConfiguration _configuration;
         private readonly OnlineShopContext _context;
+        private readonly IMapper _mapper;
+        private readonly IUnitOfWorkLegacy _unitOfWorkLegacy;
 
-        public ArrivalService(ILogger<ArrivalService> logger, IConfiguration configuration, OnlineShopContext context)
+        public ArrivalService(ILogger<ArrivalService> logger, IConfiguration configuration, OnlineShopContext context, IMapper mapper, IUnitOfWorkLegacy unitOfWorkLegacy)
         {
             _logger = logger;
             _configuration = configuration;
             _context = context;
+            _mapper = mapper;
+            _unitOfWorkLegacy = unitOfWorkLegacy;
         }
 
         public async Task<ArrivalSummaryResponseModel[]> GetArrivals(int page, int count, int shopId, int? supplierId) =>
@@ -41,119 +49,64 @@ namespace OnlineShop2.Api.Services
             })
             .ToArrayAsync();
 
-        public async Task<ArrivalRequestModel> GetOne(int id) =>
-            await _context.Arrivals.Include(a => a.Supplier).Include(a => a.ArrivalGoods).ThenInclude(a => a.Good).Where(a => a.Id == id)
-            .Select(a => new ArrivalRequestModel
-            {
-                Id = a.Id,
-                Status = a.Status,
-                Num = a.Num,
-                DateArrival = a.DateArrival,
-                SupplierId = a.SupplierId,
-                SupplierName = a.Supplier.Name,
-                ShopId = a.ShopId,
-                LegacyId = a.LegacyId,
-                Positions=a.ArrivalGoods.Select(a=>new ArrivalGoodRequestModel
-                {
-                    Id=a.Id,
-                    SequenceNum=a.SequenceNum,
-                    GoodId=a.GoodId,
-                    GoodName=a.Good.Name,
-                    PricePurchase=a.PricePurchase,
-                    Nds=a.Nds,
-                    PriceSell=a.PriceSell,
-                    Count=a.Count,
-                    ExpiresDate=a.ExpiresDate
-                }).ToList()
-            }).FirstAsync();
+        public async Task<ArrivalResponseModel> GetOne(int id) =>
+            _mapper.Map<ArrivalResponseModel>(await _context.Arrivals.Include(a => a.ArrivalGoods).ThenInclude(a => a.Good).AsNoTracking().FirstAsync(a => a.Id == id));
             
 
-        public async Task<ArrivalRequestModel> Create(ArrivalRequestModel model)
+        public async Task<ArrivalModel> Create(int shopId, ArrivalModel model)
         {
             if (model.Id != 0)
                 throw new MyServiceException("Невозможно создать повторно сущестующий документ прихода");
-            var arrival = new Arrival
-            {
-                Status = model.Status,
-                Num = model.Num,
-                DateArrival = model.DateArrival,
-                SupplierId = model.SupplierId,
-                ShopId = model.ShopId,
-                PurchaseAmount = model.Positions.Sum(a => a.PricePurchase * a.Count),
-                SumNds = 0,
-                SaleAmount = model.Positions.Sum(a => a.PriceSell * a.Count),
-                ArrivalGoods=model.Positions.Select(a=>new ArrivalGood
-                {
-                    GoodId=a.GoodId,
-                    Count=a.Count,
-                    PricePurchase=a.PricePurchase,
-                    PriceSell=a.PriceSell,
-                    ExpiresDate=a.ExpiresDate
-                }).ToList()
-            };
-            _context.Add(arrival);
+            var arrival = _mapper.Map<Arrival>(model);
+            var entity = _context.Add(arrival);
+            await legacySaveChange(entity);
             await _context.SaveChangesAsync();
-            var supplier = await _context.Suppliers.FindAsync(arrival.SupplierId);
             int i = 0;
             foreach (var agood in arrival.ArrivalGoods)
-                model.Positions[i++].Id = agood.Id;
+                model.ArrivalGoods[i++].Id = agood.Id;
 
-            return model;
+            return _mapper.Map<ArrivalModel>(arrival);
         }
 
-        public async Task<ArrivalRequestModel> Edit(ArrivalRequestModel model)
+        public async Task<ArrivalModel> Edit(ArrivalModel model)
         {
-            var arrival = await _context.Arrivals.FindAsync(model.Id);
-            if (arrival == null)
-                throw new MyServiceException($"Приход с id {model.Id} не найдена");
-            arrival.Status = model.Status;
-            arrival.Num = model.Num;
-            arrival.DateArrival = model.DateArrival;
-            arrival.SupplierId = model.SupplierId;
-            arrival.ShopId = model.ShopId;
-            arrival.PurchaseAmount = model.Positions.Sum(a => a.PricePurchase * a.Count);
-            arrival.SumNds = 0;
-            arrival.SaleAmount=model.Positions.Sum(a=>a.PriceSell* a.Count);
-            arrival.LegacyId = model.LegacyId;
-
-            var newPositions = model.Positions.Where(p => p.Id == 0).Select(p => new ArrivalGood
-            {
-                ArrivalId = arrival.Id,
-                SequenceNum=p.SequenceNum,
-                GoodId = p.GoodId,
-                PricePurchase = p.PricePurchase,
-                Nds = p.Nds,
-                PriceSell = p.PriceSell,
-                Count = p.Count,
-                ExpiresDate = p.ExpiresDate
-            });
-            _context.ArrivalGoods.AddRange(newPositions);
-
-            foreach (var position in model.Positions.Where(p => p.Id != 0))
-            {
-                var arrivalGood = await _context.ArrivalGoods.FindAsync(position.Id);
-                arrivalGood.SequenceNum=position.SequenceNum;
-                arrivalGood.GoodId = position.GoodId;
-                arrivalGood.Count = position.Count;
-                arrivalGood.PricePurchase= position.PricePurchase;
-                arrivalGood.Nds = position.Nds;
-                arrivalGood.PriceSell = position.PriceSell;
-                arrivalGood.ExpiresDate = position.ExpiresDate;
-            }
+            var arrival = _mapper.Map<Arrival>(model);
+            var entity = _context.Arrivals.Update(arrival);
+            await legacySaveChange(entity);
             await _context.SaveChangesAsync();
-
-            foreach (var pos in newPositions)
-                model.Positions.Where(p => p.SequenceNum == pos.SequenceNum & p.Id == 0).First().Id = pos.Id;
+            for (int i = 0; i < model.ArrivalGoods.Count; i++)
+                model.ArrivalGoods[i].Id = arrival.ArrivalGoods[i].Id;
             return model;
         }
 
         public async Task Remove(int id)
         {
-            var arrival = await _context.Arrivals.FindAsync(id);
-            if (arrival == null)
-                throw new MyServiceException($"Приход с id {id} не найдена");
-            _context.Remove(arrival);
+            _context.Remove(new Arrival { Id = id });
             await _context.SaveChangesAsync();
+        }
+
+        private async Task legacySaveChange(EntityEntry entity)
+        {
+            var arrival = entity.Entity as Arrival;
+            var shop = await _context.Shops.FindAsync(arrival.ShopId);
+            if (shop.LegacyDbNum == null)
+                return;
+            if(arrival.LegacyId==null) return;
+            _unitOfWorkLegacy.SetConnectionString(_configuration.GetConnectionString("shop" + shop.LegacyDbNum));
+            if (entity.State == EntityState.Deleted)
+                await _unitOfWorkLegacy.ArrivalRepository.DeleteAsync((int)arrival.LegacyId);
+            var arrivalLegacy = _mapper.Map<ArrivalLegacy>(arrival);
+            arrivalLegacy.Id = (int)arrival.LegacyId;
+            arrivalLegacy.ShopId = 1;
+            arrivalLegacy.SupplierId = (int)(await _context.Suppliers.FindAsync(arrival.SupplierId)).LegacyId;
+            var goodsId = arrival.ArrivalGoods.Select(x => x.GoodId);
+            var goods = await _context.Goods.Where(g => goodsId.Contains(g.Id)).AsNoTracking().ToListAsync();
+            foreach (var goodLegacy in arrivalLegacy.ArrivalGoods)
+                goodLegacy.GoodId = (int)goods.First(x => x.Id == goodLegacy.GoodId).LegacyId;
+            if (entity.State==EntityState.Added)
+                arrival.LegacyId= await _unitOfWorkLegacy.ArrivalRepository.AddAsync(arrivalLegacy);
+            if(entity.State==EntityState.Modified)
+                await _unitOfWorkLegacy.ArrivalRepository.UpdateAsync(arrivalLegacy);
         }
     }
 }

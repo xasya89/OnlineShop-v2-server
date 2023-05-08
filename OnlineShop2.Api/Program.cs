@@ -65,6 +65,7 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<CurrentBalanceService>();
 
             builder.Services.AddTransient<SupplierService>();
+            builder.Services.AddTransient<ArrivalService>();
 
             //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<SynchLegacyHostedService>();

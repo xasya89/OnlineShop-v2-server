@@ -1,4 +1,5 @@
-﻿using OnlineShop2.LegacyDb.Models;
+﻿using MySql.Data.MySqlClient;
+using OnlineShop2.LegacyDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         IGoodGroupRepositoryLegacy GoodGroupRepository { get; }
         IShiftRepositoryLegacy ShiftRepository { get; }
         ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
+        IArrivalRepositoryLegacy ArrivalRepository { get; }
     }
     public interface IGeneralRepositoryLegacy<T> where T: class
     {
@@ -40,4 +42,6 @@ namespace OnlineShop2.LegacyDb.Repositories
         void SetConnectionString(string connectionString);
         public Task<IReadOnlyCollection<ShiftLegacy>> GetShifts(DateOnly with);
     }
+
+    public interface IArrivalRepositoryLegacy : IGeneralRepositoryLegacy<ArrivalLegacy> { }
 }

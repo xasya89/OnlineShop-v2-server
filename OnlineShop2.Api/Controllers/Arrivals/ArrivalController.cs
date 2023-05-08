@@ -8,7 +8,7 @@ namespace OnlineShop2.Api.Controllers.Arrivals
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ArrivalController : ControllerBase
     {
         public readonly ArrivalService _service;
@@ -20,13 +20,13 @@ namespace OnlineShop2.Api.Controllers.Arrivals
             await _service.GetArrivals(page, count, shopId, supplierId);
 
         [HttpGet("/api/{shopId}/arrivals/{id}")]
-        public async Task<ArrivalRequestModel> GetOne(int id) => await _service.GetOne(id);
+        public async Task<ArrivalResponseModel> GetOne(int id) => await _service.GetOne(id);
 
         [HttpPost("/api/{shopId}/arrivals")]
-        public async Task<ArrivalRequestModel> Create([FromBody] ArrivalRequestModel model) => await _service.Create(model);
+        public async Task<ArrivalModel> Create(int shopId, [FromBody] ArrivalModel model) => await _service.Create(shopId, model);
 
         [HttpPut("/api/{shopId}/arrivals/{id}")]
-        public async Task<ArrivalRequestModel> Update(int id, [FromBody] ArrivalRequestModel model) => await _service.Edit(model);
+        public async Task<ArrivalModel> Update(int id, [FromBody] ArrivalModel model) => await _service.Edit(model);
 
         [HttpDelete("/api/{shopId}/arrivals/{id}")]
         public async Task<IActionResult> Delete(int id)
