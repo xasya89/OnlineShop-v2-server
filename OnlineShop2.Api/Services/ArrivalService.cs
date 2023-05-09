@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using OnlineShop2.Api.BizLogic;
 using OnlineShop2.Api.Extensions;
 using OnlineShop2.Api.Models.Arrival;
 using OnlineShop2.Database;
@@ -59,6 +60,8 @@ namespace OnlineShop2.Api.Services
                 throw new MyServiceException("Невозможно создать повторно сущестующий документ прихода");
             var arrival = _mapper.Map<Arrival>(model);
             var entity = _context.Add(arrival);
+            await operationPriceBalanceChange(entity);
+
             await legacySaveChange(entity);
             await _context.SaveChangesAsync();
             int i = 0;
@@ -72,6 +75,7 @@ namespace OnlineShop2.Api.Services
         {
             var arrival = _mapper.Map<Arrival>(model);
             var entity = _context.Arrivals.Update(arrival);
+            await operationPriceBalanceChange(entity);
             await legacySaveChange(entity);
             await _context.SaveChangesAsync();
             for (int i = 0; i < model.ArrivalGoods.Count; i++)
@@ -83,6 +87,20 @@ namespace OnlineShop2.Api.Services
         {
             _context.Remove(new Arrival { Id = id });
             await _context.SaveChangesAsync();
+        }
+
+        private async Task operationPriceBalanceChange(EntityEntry entity)
+        {
+            var arrival = entity.Entity as Arrival;
+            if(entity.State==EntityState.Modified)
+            {
+                var prevArrivalGoods = await _context.ArrivalGoods.Where(a => a.ArrivalId == arrival.Id).AsNoTracking().ToListAsync();
+                await CurrentBalanceChange.Change(_context, arrival.ShopId, prevArrivalGoods.GroupBy(x => x.GoodId).ToDictionary(a => a.Key, a => -1 * a.Sum(x => x.Count)));
+            }
+            var arrivalgoods = arrival.ArrivalGoods.GroupBy(a=>a.GoodId)
+                .Select(a=>new { GoodId = a.Key, PriceSell = a.First().PriceSell, Count = a.Sum(x=>x.Count) });
+            await PriceChange.Change(_context, arrival.ShopId, arrivalgoods.ToDictionary(x => x.GoodId, x => x.PriceSell));
+            await CurrentBalanceChange.Change(_context, arrival.ShopId, arrivalgoods.ToDictionary(x => x.GoodId, x => x.Count));
         }
 
         private async Task legacySaveChange(EntityEntry entity)

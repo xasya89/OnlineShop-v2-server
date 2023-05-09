@@ -1,4 +1,5 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Dao;
+using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Models.Arrival
 {
@@ -21,7 +22,9 @@ namespace OnlineShop2.Api.Models.Arrival
     {
         public int Id { get; set; }
         public int GoodId { get; set; }
-        public Good Good { get; set; }
+        public string GoodName { get=>Good?.Name ?? ""; }
+        public Units Unit { get => Good?.Unit ?? Units.PCE; }
+        public Good Good { private get; set; }
         public decimal Count { get; set; }
         public decimal PricePurchase { get; set; }
         public NDSType Nds { get; set; }
