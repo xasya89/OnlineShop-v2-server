@@ -24,5 +24,6 @@ namespace OnlineShop2.Api.Models.Arrival
         public NDSType Nds { get; set; }
         public decimal PriceSell { get; set; }
         public DateTime? ExpiresDate { get; set; }
+        public bool IsDelete { get; set; }
     }
 }

@@ -75,6 +75,8 @@ namespace OnlineShop2.Api.Services
         {
             var arrival = _mapper.Map<Arrival>(model);
             var entity = _context.Arrivals.Update(arrival);
+            var isDeleteIds = model.ArrivalGoods.Where(a => a.IsDelete).Select(a => a.Id);
+            arrival.ArrivalGoods.Where(a => isDeleteIds.Contains(a.Id)).ToList().ForEach(a => _context.ArrivalGoods.Entry(a).State = EntityState.Deleted);
             await operationPriceBalanceChange(entity);
             await legacySaveChange(entity);
             await _context.SaveChangesAsync();
@@ -89,21 +91,42 @@ namespace OnlineShop2.Api.Services
             await _context.SaveChangesAsync();
         }
 
-        private async Task operationPriceBalanceChange(EntityEntry entity)
+        /// <summary>
+        /// Изменим количество и цену товара после созранения
+        /// </summary>
+        /// <param name="entity">Сущность прихода</param>
+        /// <param name="isDeletePositionsId">Список позиций помеченных на удаление</param>
+        /// <returns></returns>
+        private async Task operationPriceBalanceChange(EntityEntry entity, IEnumerable<int> isDeletePositionsId = null)
         {
             var arrival = entity.Entity as Arrival;
+            //Вычтем количество указаное переж редактированием
             if(entity.State==EntityState.Modified)
             {
                 var prevArrivalGoods = await _context.ArrivalGoods.Where(a => a.ArrivalId == arrival.Id).AsNoTracking().ToListAsync();
                 await CurrentBalanceChange.Change(_context, arrival.ShopId, prevArrivalGoods.GroupBy(x => x.GoodId).ToDictionary(a => a.Key, a => -1 * a.Sum(x => x.Count)));
             }
-            var arrivalgoods = arrival.ArrivalGoods.GroupBy(a=>a.GoodId)
+
+            var arrivalgoods = arrival.ArrivalGoods;
+            //Исключим позиции помеченные на удаление
+            if (isDeletePositionsId != null)
+                arrivalgoods = arrivalgoods.Where(a => !isDeletePositionsId.Contains(a.Id)).ToList();
+
+            var arrivalgoodsGroups = arrivalgoods.GroupBy(a=>a.GoodId)
                 .Select(a=>new { GoodId = a.Key, PriceSell = a.First().PriceSell, Count = a.Sum(x=>x.Count) });
-            await PriceChange.Change(_context, arrival.ShopId, arrivalgoods.ToDictionary(x => x.GoodId, x => x.PriceSell));
-            await CurrentBalanceChange.Change(_context, arrival.ShopId, arrivalgoods.ToDictionary(x => x.GoodId, x => x.Count));
+            //Изменим прайс
+            await PriceChange.Change(_context, arrival.ShopId, arrivalgoodsGroups.ToDictionary(x => x.GoodId, x => x.PriceSell));
+            //Добавим уоличество
+            await CurrentBalanceChange.Change(_context, arrival.ShopId, arrivalgoodsGroups.ToDictionary(x => x.GoodId, x => x.Count));
         }
 
-        private async Task legacySaveChange(EntityEntry entity)
+        /// <summary>
+        /// Изменяет кол-во и цену в legacy бд
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="deletePositionsId"></param>
+        /// <returns></returns>
+        private async Task legacySaveChange(EntityEntry entity, IEnumerable<int> deletePositionsId = null)
         {
             var arrival = entity.Entity as Arrival;
             var shop = await _context.Shops.FindAsync(arrival.ShopId);
@@ -111,8 +134,13 @@ namespace OnlineShop2.Api.Services
                 return;
             if(arrival.LegacyId==null) return;
             _unitOfWorkLegacy.SetConnectionString(_configuration.GetConnectionString("shop" + shop.LegacyDbNum));
+
             if (entity.State == EntityState.Deleted)
+            {
                 await _unitOfWorkLegacy.ArrivalRepository.DeleteAsync((int)arrival.LegacyId);
+                return;
+            }    
+
             var arrivalLegacy = _mapper.Map<ArrivalLegacy>(arrival);
             arrivalLegacy.Id = (int)arrival.LegacyId;
             arrivalLegacy.ShopId = 1;
@@ -121,6 +149,11 @@ namespace OnlineShop2.Api.Services
             var goods = await _context.Goods.Where(g => goodsId.Contains(g.Id)).AsNoTracking().ToListAsync();
             foreach (var goodLegacy in arrivalLegacy.ArrivalGoods)
                 goodLegacy.GoodId = (int)goods.First(x => x.Id == goodLegacy.GoodId).LegacyId;
+
+            //Уберем помеченные на удаление строки
+            if (deletePositionsId != null)
+                arrivalLegacy.ArrivalGoods = arrivalLegacy.ArrivalGoods.Where(a => !deletePositionsId.Contains(a.Id)).ToList();
+
             if (entity.State==EntityState.Added)
                 arrival.LegacyId= await _unitOfWorkLegacy.ArrivalRepository.AddAsync(arrivalLegacy);
             if(entity.State==EntityState.Modified)

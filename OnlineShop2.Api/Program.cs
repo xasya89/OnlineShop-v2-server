@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics;
 using OnlineShop2.Api.Services.HostedService;
 using OnlineShop2.Api.Extensions.MapperProfiles;
+using System.Text.Json.Serialization;
 
 namespace OnlineShop2.Api
 {
@@ -44,7 +45,10 @@ namespace OnlineShop2.Api
                                   });
             });
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(optopns=>
+                optopns.JsonSerializerOptions.Converters.Add(new JsonDateTimeConverter())
+                );
+            
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -176,6 +180,19 @@ namespace OnlineShop2.Api
             const string KEY = "$parkI1010_ABC_444_dfdfdf!#$";   // ключ для шифрации
             public static SymmetricSecurityKey GetSymmetricSecurityKey() =>
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(KEY));
+        }
+
+        public class JsonDateTimeConverter : JsonConverter<DateTime>
+        {
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return DateTime.Parse(reader.GetString() ?? DateTime.Now.ToString("dd.MM.yyyy"));
+            }
+
+            public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString("dd.MM.yy"));
+            }
         }
     }
 }
