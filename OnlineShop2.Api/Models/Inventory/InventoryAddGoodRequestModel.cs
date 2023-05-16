@@ -3,10 +3,9 @@
     public class InventoryAddGoodRequestModel
     {
         public int id { get; set; }
-        public int GroupId { get; set; }
+        public int InventoryGroupId { get; set; }
         public int GoodId { get; set; }
         public decimal? CountFact { get; set; }
-        public InventoryAddGoodRequestState State { get; set; }
     }
 
     public enum InventoryAddGoodRequestState

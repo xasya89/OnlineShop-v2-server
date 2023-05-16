@@ -30,6 +30,7 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<Inventory, InventoryResponseModel>();
             CreateMap<InventoryGroup, InventoryGroupResponseModel>();
             CreateMap<InventoryGood, InventoryGoodResponseModel>();
+            CreateMap<InventoryAddGoodRequestModel, InventoryGood>();
             CreateMap<InventorySummaryGood, InventorySummaryGoodResponseModel>();
 
             CreateMap<GoodCurrentBalance, CurrentBalanceResponseModel>();
