@@ -130,6 +130,20 @@ VALUES (@Num, @DateArrival, @SupplierId, @ShopId, @isSuccess, @SumPayments, @Sum
                 return await getByIdAsync(con, id);
         }
 
+        public async Task<IEnumerable<ArrivalLegacy>> GetArrivalWithDate(DateTime with)
+        {
+            using(var con = new MySqlConnection(_connectionString))
+            {
+                con.Open();
+                var arrivals = await con.QueryAsync<ArrivalLegacy>("SELECT * FROM arrivals WHERE DateArrival>=@With",
+                    new {With = with});
+                foreach(var arrival in arrivals)
+                    arrival.ArrivalGoods = (await con.QueryAsync<ArrivalGoodLegacy>("SELECT * FROM arrivalgoods WHERE ArrivalId = @ArrivalId",
+                        new { ArrivalId = arrival.Id })).ToList();
+                return arrivals;
+            }
+        }
+
         public void SetConnectionString(string connectionString) => _connectionString = connectionString;
 
         public async Task UpdateAsync(ArrivalLegacy entity)

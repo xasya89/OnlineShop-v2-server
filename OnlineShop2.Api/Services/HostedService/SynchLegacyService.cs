@@ -27,7 +27,7 @@ namespace OnlineShop2.Api.Services.HostedService
         }
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            int period = _configuration.GetSection("Cron").GetValue<int>("ShiftSynch");
+            int period = _configuration.GetValue<int>("Cron:ShiftSynch");
             _timer = new Timer(DoWork, null, 0, period);
 
             return Task.CompletedTask;
@@ -64,6 +64,7 @@ namespace OnlineShop2.Api.Services.HostedService
                     await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await shiftSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+                    await arrivalSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                 }
             }
             catch (Exception ex)
@@ -304,6 +305,58 @@ namespace OnlineShop2.Api.Services.HostedService
                 context.Entry(shift).State = EntityState.Detached;
             foreach (var check in newChecks)
                 context.Entry(check).State = EntityState.Detached;
+        }
+
+        private async Task arrivalSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
+        {
+            DateTime with = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
+            var laegacyArrivals = await unitOfWork.ArrivalRepository.GetArrivalWithDate(with);
+            
+            var arrivals = await context.Arrivals.Where(a => a.DateArrival >= with).ToListAsync();
+            var arrivalLegacyIds = arrivals.Select(a => a.LegacyId);
+
+            var suppliers = await context.Suppliers.AsNoTracking().ToListAsync();
+            var goods = await context.Goods.AsNoTracking().ToListAsync();
+            var newArrivals = laegacyArrivals.Where(a => !arrivalLegacyIds.Contains(a.Id)).Select(a=>
+                new Arrival
+                {
+                    Id=0,
+                    Num=a.Num,
+                    DateArrival=a.DateArrival,
+                    SupplierId = suppliers.Find(s=>s.LegacyId==a.SupplierId).Id,
+                    ShopId=shopId,
+                    Status=DocumentStatus.Successed,
+                    PurchaseAmount = a.SumArrival,
+                    SaleAmount=a.SumSell,
+                    SumNds=a.SumNds,
+                    LegacyId=a.Id,
+                    ArrivalGoods = a.ArrivalGoods.Select(x=>new ArrivalGood
+                    {
+                        Id=0,
+                        ArrivalId=0,
+                        GoodId = goods.Find(g=>g.LegacyId==x.GoodId).Id,
+                        Count=x.Count,
+                        PricePurchase=x.Price,
+                        PriceSell=x.PriceSell,
+                        Nds=NDSType.None,
+                        ExpiresDate=x.ExpiresDate
+                    }).ToList()
+                }
+            );
+            if (newArrivals.Count() == 0) return; 
+            context.Arrivals.AddRange(newArrivals);
+
+            //Увеличим кол-во
+            var changeGoodsBalance = newArrivals.SelectMany(a => a.ArrivalGoods).GroupBy(x => x.GoodId).Select(x => new { GoodId = x.Key, Count = x.Sum(x => x.Count) });
+            foreach (var change in changeGoodsBalance)
+                await context.GoodCurrentBalances
+                    .Where(x => x.GoodId == change.GoodId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(x => x.CurrentCount, x => x.CurrentCount + change.Count));
+
+            await context.SaveChangesAsync();
+
+            foreach (var newArrival in newArrivals)
+                context.Entry(newArrival).State = EntityState.Detached;
         }
     }
 }

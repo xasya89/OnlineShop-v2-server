@@ -43,5 +43,8 @@ namespace OnlineShop2.LegacyDb.Repositories
         public Task<IReadOnlyCollection<ShiftLegacy>> GetShifts(DateOnly with);
     }
 
-    public interface IArrivalRepositoryLegacy : IGeneralRepositoryLegacy<ArrivalLegacy> { }
+    public interface IArrivalRepositoryLegacy : IGeneralRepositoryLegacy<ArrivalLegacy> 
+    {
+        Task<IEnumerable<ArrivalLegacy>> GetArrivalWithDate(DateTime with);
+    }
 }
