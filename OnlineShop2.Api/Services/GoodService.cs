@@ -63,6 +63,12 @@ namespace OnlineShop2.Api.Services
             return _mapper.Map<GoodResponseModel>(good);
         }
 
+        public async Task<int?> BarCodeExists(int shopId, string barcode) => 
+            _configuration.GetValue<bool>("OwnerGoodForShops") == false ?
+            (await _context.Barcodes.AsNoTracking().FirstOrDefaultAsync(b => b.Code == barcode))?.GoodId :
+            (await _context.Barcodes.Include(b=>b.Good)
+                .Where(b => b.Good.ShopId==shopId & b.Code == barcode).AsNoTracking().FirstOrDefaultAsync())?.GoodId;
+
         public async Task<GoodResponseModel> Create(int shopId, GoodCreateRequestModel model)
         {
             if (string.IsNullOrEmpty(model.Name)) throw new MyServiceException("Не указано наименование товара");
@@ -110,10 +116,7 @@ namespace OnlineShop2.Api.Services
             if (good == null) throw new MyServiceException($"Товар с id {id} не найден");
 
             //Проверим существование товара в дургих документах
-            bool flag = true;
-            flag = await _context.CheckGoods.Where(c=>c.GoodId==id).AnyAsync() ? false : flag;
-            flag = await _context.InventoryGoods.Where(c => c.GoodId == id).AnyAsync() ? false : flag;
-            if (flag)
+            if(!await existsGoodInOtherDocs(id))
                 _context.Remove(good);
             else
                 good.IsDeleted = true;
@@ -216,6 +219,14 @@ namespace OnlineShop2.Api.Services
                 var val = prop.GetValue(original);
 
             }
+        }
+
+        private async Task<bool> existsGoodInOtherDocs(int goodId)
+        {
+            bool flag = false;
+            flag = await _context.CheckGoods.Where(c => c.GoodId == goodId).AnyAsync() ? false : flag;
+            flag = await _context.InventoryGoods.Where(c => c.GoodId == goodId).AnyAsync() ? false : flag;
+            return flag;
         }
     }
 }

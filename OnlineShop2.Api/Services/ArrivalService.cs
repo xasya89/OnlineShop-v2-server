@@ -29,26 +29,35 @@ namespace OnlineShop2.Api.Services
             _unitOfWorkLegacy = unitOfWorkLegacy;
         }
 
-        public async Task<ArrivalSummaryResponseModel[]> GetArrivals(int page, int count, int shopId, int? supplierId) =>
-            await _context.Arrivals
+        public async Task<dynamic> GetArrivals(int page, int count, int shopId, int? supplierId)
+        {
+            var total = await _context.Arrivals
             .Include(a => a.Supplier)
-            .Where(a => a.ShopId==shopId & (supplierId == null || a.SupplierId == supplierId))
-            .OrderByDescending(a=>a.DateArrival).Skip(page).Take(count)
-            .Select(a=>new ArrivalSummaryResponseModel
+            .Where(a => a.ShopId == shopId & (supplierId == null || a.SupplierId == supplierId)).CountAsync();
+
+            var arrivals = await _context.Arrivals
+            .Include(a => a.Supplier)
+            .Where(a => a.ShopId == shopId & (supplierId == null || a.SupplierId == supplierId))
+            .OrderByDescending(a => a.DateArrival).Skip(page).Take(count)
+            .Select(a => new ArrivalSummaryResponseModel
             {
-                Id=a.Id,
-                Status=a.Status,
-                Num=a.Num,
-                DateArrival=a.DateArrival,
-                SupplierId=a.SupplierId,
-                SupplierName=a.Supplier.Name,
-                ShopId=a.ShopId,
-                PurchaseAmount=a.PurchaseAmount,
-                SumNds=a.SumNds,
-                SaleAmount=a.SaleAmount,
-                LegacyId=a.LegacyId
+                Id = a.Id,
+                Status = a.Status,
+                Num = a.Num,
+                DateArrival = a.DateArrival,
+                SupplierId = a.SupplierId,
+                SupplierName = a.Supplier.Name,
+                ShopId = a.ShopId,
+                PurchaseAmount = a.PurchaseAmount,
+                SumNds = a.SumNds,
+                SaleAmount = a.SaleAmount,
+                LegacyId = a.LegacyId
             })
             .ToArrayAsync();
+
+            return new { Total = total, Arrivals = arrivals };
+        }
+            
 
         public async Task<ArrivalResponseModel> GetOne(int id) =>
             _mapper.Map<ArrivalResponseModel>(await _context.Arrivals.Include(a => a.ArrivalGoods).ThenInclude(a => a.Good).AsNoTracking().FirstAsync(a => a.Id == id));

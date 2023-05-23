@@ -16,8 +16,8 @@ namespace OnlineShop2.Api.Controllers.Arrivals
         public ArrivalController(ArrivalService service) => _service = service;
 
         [HttpGet("/api/{shopId}/arrivals")]
-        public async Task<ArrivalSummaryResponseModel[]> Get(int shopId, [FromQuery] int page=0, [FromQuery] int count=50, [FromQuery] int? supplierId=null) =>
-            await _service.GetArrivals(page, count, shopId, supplierId);
+        public async Task<IActionResult> Get(int shopId, [FromQuery] int page=0, [FromQuery] int count=50, [FromQuery] int? supplierId=null) =>
+            Ok(await _service.GetArrivals(page, count, shopId, supplierId));
 
         [HttpGet("/api/{shopId}/arrivals/{id}")]
         public async Task<ArrivalResponseModel> GetOne(int id) => await _service.GetOne(id);
