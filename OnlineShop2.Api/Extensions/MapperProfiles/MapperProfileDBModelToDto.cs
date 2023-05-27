@@ -4,6 +4,7 @@ using OnlineShop2.Api.Models.CurrentBalance;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Api.Models.Inventory;
 using OnlineShop2.Api.Models.Shop;
+using OnlineShop2.Api.Models.Writeof;
 using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Extensions.MapperProfiles
@@ -41,6 +42,12 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<ArrivalGoodModel, ArrivalGood>();
             CreateMap<Arrival, ArrivalResponseModel>();
             CreateMap<ArrivalGood, ArrivalGoodResponseModel>();
+
+            CreateMap<Writeof, WriteofModel>();
+            CreateMap<WriteofGood, WriteofGoodModel>();
+            CreateMap<WriteofModel, Writeof>();
+            CreateMap<WriteofGoodModel, WriteofGood>();
+            CreateMap<Writeof, WriteofSummaryModel>();
         }
     }
 }

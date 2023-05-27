@@ -31,14 +31,14 @@ namespace OnlineShop2.Api.Services
 
         public async Task<dynamic> GetArrivals(int page, int count, int shopId, int? supplierId)
         {
-            var total = await _context.Arrivals
-            .Include(a => a.Supplier)
-            .Where(a => a.ShopId == shopId & (supplierId == null || a.SupplierId == supplierId)).CountAsync();
+            var query = _context.Arrivals
+            .Include(a => a.Supplier).Where(a => a.ShopId==shopId);
+            if (supplierId != null)
+                query = query.Where(a => a.SupplierId == supplierId);
+            var total = await query.CountAsync();
 
-            var arrivals = await _context.Arrivals
-            .Include(a => a.Supplier)
-            .Where(a => a.ShopId == shopId & (supplierId == null || a.SupplierId == supplierId))
-            .OrderByDescending(a => a.DateArrival).Skip(page).Take(count)
+            var arrivals = await query
+            .OrderByDescending(a => a.DateArrival).Skip((page-1)*count).Take(count)
             .Select(a => new ArrivalSummaryResponseModel
             {
                 Id = a.Id,

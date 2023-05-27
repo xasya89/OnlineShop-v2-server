@@ -65,6 +65,7 @@ namespace OnlineShop2.Api.Services.HostedService
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await shiftSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await arrivalSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+                    await writeofSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                 }
             }
             catch (Exception ex)
@@ -357,6 +358,36 @@ namespace OnlineShop2.Api.Services.HostedService
 
             foreach (var newArrival in newArrivals)
                 context.Entry(newArrival).State = EntityState.Detached;
+        }
+
+        private async Task writeofSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
+        {
+            DateTime with = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
+            var legacyList = _mapper.Map<IEnumerable<Writeof>> ( await unitOfWork.WriteofRepositoryLegacy.GetWriteOfWithDate(DateTime.Now));
+            var legacyInDbIds = await context.Writeofs.Where(w => w.DateWriteof >= with).AsNoTracking().Select(w=>w.LegacyId).ToListAsync();
+            
+            var legacyGoodsIds = legacyList.SelectMany(w => w.WriteofGoods).GroupBy(x => x.GoodId).Select(x => x.Key).ToList();
+            var goods = await context.Goods.Where(g => legacyGoodsIds.Contains(g.LegacyId ?? 0)).AsNoTracking().ToListAsync();
+
+            foreach(var legacy in legacyList.Where(w=>!legacyInDbIds.Contains(w.Id)))
+            {
+                legacy.LegacyId = legacy.Id;
+                legacy.Id = 0;
+                legacy.ShopId = shopId;
+                legacy.WriteofGoods.ForEach(g =>
+                {
+                    g.Id = 0;
+                    g.WriteofId = 0;
+                    g.GoodId = goods.Where(x => x.LegacyId == g.GoodId).First().Id;
+
+                    context.GoodCurrentBalances.Where(x => x.ShopId == shopId & x.GoodId == g.GoodId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(x => x.CurrentCount, x => x.CurrentCount - g.Count));
+                });
+                context.Writeofs.Add(legacy);
+                
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 }

@@ -19,6 +19,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             ShiftRepository.SetConnectionString(connectionString);
             CurrentBalance.SetConnectionString(connectionString);
             ArrivalRepository.SetConnectionString(connectionString);
+            WriteofRepositoryLegacy.SetConnectionString(connectionString);
         }
 
         public UnitOfWorkLegacy(ISupplierRepositoryLegacy supplier, 
@@ -26,7 +27,8 @@ namespace OnlineShop2.LegacyDb.Repositories
             IGoodReporitoryLegacy goodReporitory,
             IShiftRepositoryLegacy shiftRepository,
             ICurrentBalanceRepositoryLegacy currentBalance,
-            IArrivalRepositoryLegacy arrival)
+            IArrivalRepositoryLegacy arrival,
+            IWriteofRepositoryLegacy writeof)
         {
             SupplierRepository= supplier;
             GoodGroupRepository = goodGroup;
@@ -34,6 +36,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             ShiftRepository = shiftRepository;
             CurrentBalance = currentBalance;
             ArrivalRepository = arrival;
+            WriteofRepositoryLegacy = writeof;
         }
 
         public ISupplierRepositoryLegacy SupplierRepository { get; }
@@ -45,5 +48,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         public ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
 
         public IArrivalRepositoryLegacy ArrivalRepository { get; }
+
+        public IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
     }
 }

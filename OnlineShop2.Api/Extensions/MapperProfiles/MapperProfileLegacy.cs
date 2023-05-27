@@ -22,6 +22,11 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<GoodCurrentBalance, GoodCountBalanceCurrentLegacy>();
             CreateMap<Arrival, ArrivalLegacy>();
             CreateMap<ArrivalGood, ArrivalGoodLegacy>();
+
+            CreateMap<WriteofLegacy, WriteofLegacy>();
+            CreateMap<WriteofGoodLegacy, WriteofGood>();
+            CreateMap<Writeof, WriteofLegacy>();
+            CreateMap<WriteofGood, WriteofGoodLegacy>();
         }
     }
 }

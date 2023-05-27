@@ -12,6 +12,7 @@ namespace OnlineShop2.Api.Services.Legacy
             .AddTransient<IShiftRepositoryLegacy, ShiftRepositoryLegacy>()
             .AddTransient<ICurrentBalanceRepositoryLegacy, CurrentBalanceRepositoryLegacy>()
             .AddTransient<IArrivalRepositoryLegacy, ArrivalRepositoryLegacy>()
+            .AddTransient<IWriteofRepositoryLegacy, WriteofRepositoryLegacy>()
             .AddTransient<IUnitOfWorkLegacy, UnitOfWorkLegacy>();
     }
 }
