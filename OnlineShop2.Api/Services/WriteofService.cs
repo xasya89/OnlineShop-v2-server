@@ -28,10 +28,14 @@ namespace OnlineShop2.Api.Services
             _unitOfWorkLegacy = unitOfWorkLegacy;
         }
 
-        public async Task<IEnumerable<WriteofSummaryModel>> GetAll(int shopId, int page, int total) =>
-            _mapper.Map<IEnumerable<WriteofSummaryModel>>(
-                await _context.Writeofs.Where(w => w.ShopId == shopId).Skip((page - 1) * total).Take(total).ToListAsync()
+        public async Task<dynamic> GetAll(int shopId, int page=0, int count=20)
+        {
+            var total = await _context.Writeofs.CountAsync();
+            var result = _mapper.Map<IEnumerable<WriteofSummaryModel>>(
+                await _context.Writeofs.Where(w => w.ShopId == shopId).Skip((page - 1) * count).Take(count).ToListAsync()
             );
+            return new { Total = total, writeofs = result };
+        }
 
         public async Task<WriteofModel> GetOne(int writeofId) =>
             _mapper.Map<WriteofModel>(
