@@ -1,5 +1,6 @@
 ﻿using OnlineShop2.Dao;
 using OnlineShop2.Database.Models;
+using OnlineShop2.Dao.Extensions;
 
 namespace OnlineShop2.Api.Models.Writeof
 {
@@ -12,7 +13,7 @@ namespace OnlineShop2.Api.Models.Writeof
         public string Note { get; set; }
         public decimal SumAll { get; set; }
 
-        public List<WriteofGood> WriteofGoodModel { get; set; } = new();
+        public List<WriteofGoodModel> WriteofGoods { get; set; } = new();
     }
 
     public class WriteofGoodModel
@@ -20,8 +21,9 @@ namespace OnlineShop2.Api.Models.Writeof
         public int Id { get; set; }
         public int GoodId { get; set; }
         public Good Good { private get; set; }
-        public string GoodName { get => Good?.Name; }
+        public string? GoodName { get => Good?.Name; }
         public Units? Unit { get => Good?.Unit; }
+        public string? UnitStr { get => Unit?.GetDisplayName(); }
         public decimal Price { get; set; }
         public decimal Count { get; set; }
     }

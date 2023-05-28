@@ -39,7 +39,7 @@ namespace OnlineShop2.Api.Services
 
         public async Task<WriteofModel> GetOne(int writeofId) =>
             _mapper.Map<WriteofModel>(
-                await _context.Writeofs.Include(w => w.WriteofGoods).Where(w => w.Id == writeofId).AsNoTracking().ToListAsync());
+                await _context.Writeofs.Include(w => w.WriteofGoods).ThenInclude(w=>w.Good).Where(w => w.Id == writeofId).FirstAsync());
 
         public async Task<WriteofModel> Add(WriteofModel model)
         {
@@ -54,13 +54,14 @@ namespace OnlineShop2.Api.Services
 
             await _context.SaveChangesAsync();
             return _mapper.Map<WriteofModel>(
-                await _context.Writeofs.Include(w => w.WriteofGoods).Where(w => w.Id == writeof.Id).AsNoTracking().ToListAsync()
+                await _context.Writeofs.Include(w => w.WriteofGoods).ThenInclude(w=>w.Good).Where(w => w.Id == writeof.Id).AsNoTracking().FirstAsync()
                 );
         }
 
         public async Task<WriteofModel> Update(WriteofModel model)
         {
             var writeof = _mapper.Map<Writeof>(model);
+            writeof.SumAll = writeof.WriteofGoods.Sum(w => w.Count * w.Price);
             var entity = _context.Writeofs.Update(writeof);
 
             var positionsOriginal = await _context.WriteofGoods.Where(w => w.WriteofId == writeof.Id).AsNoTracking().ToListAsync();
@@ -104,7 +105,7 @@ namespace OnlineShop2.Api.Services
         {
             var writeof = entity.Entity as Writeof;
             var writeofLegacy = _mapper.Map<WriteofLegacy>(writeof);
-            var shop = await _context.Shops.AsNoTracking().FirstAsync(x => x.Id == writeof.Id);
+            var shop = await _context.Shops.AsNoTracking().FirstAsync(x => x.Id == writeof.ShopId);
             if (shop.LegacyDbNum == null)
                 return;
             var connectionStr = _configuration.GetConnectionString("shop" + shop.LegacyDbNum);

@@ -16,23 +16,23 @@ namespace OnlineShop2.Api.Controllers.Writeof
             _writeofService = writeofService;
         }
 
-        [HttpGet("/{shopId}/writeofs")]
+        [HttpGet("/api/{shopId}/writeofs")]
         public async Task<IActionResult> GetAll(int shopId, [FromQuery] int page, [FromQuery] int count)
             => Ok(await _writeofService.GetAll(shopId, page, count));
 
-        [HttpGet("/{shopId}/writeofs/{id}")]
+        [HttpGet("/api/{shopId}/writeofs/{id}")]
         public async Task<WriteofModel> GetOne(int shopId, int id) =>
             await _writeofService.GetOne(id);
 
-        [HttpPost("/{shopId}/writeofs")]
+        [HttpPost("/api/{shopId}/writeofs")]
         public async Task<WriteofModel> Add(int shopId, [FromBody] WriteofModel model) =>
             await _writeofService.Add(model);
 
-        [HttpPut("/{shopId}/writeofs")]
+        [HttpPut("/api/{shopId}/writeofs")]
         public async Task<WriteofModel> Update([FromBody] WriteofModel model) =>
             await _writeofService.Update(model);
 
-        [HttpDelete("/{shopId}/writeofs/{id}")]
+        [HttpDelete("/api/{shopId}/writeofs/{id}")]
         public async Task Delete(int id) =>
             await _writeofService.Delete(id);
     }

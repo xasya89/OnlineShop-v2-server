@@ -1,4 +1,5 @@
-﻿using OnlineShop2.Dao;
+﻿using Microsoft.OpenApi.Extensions;
+using OnlineShop2.Dao;
 using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Models.Goods
@@ -20,6 +21,7 @@ namespace OnlineShop2.Api.Models.Goods
         public string Name { get; set; }
         public string? Article { get; set; }
         public Units Unit { get; set; }
+        public string? UnitStr { get => Unit.GetDisplayName(); }
         public decimal Price { get; set; }
         public SpecialTypes SpecialType { get; set; }
         public double? VPackage { get; set; }
