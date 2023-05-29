@@ -44,6 +44,7 @@ namespace OnlineShop2.Api.Services
         public async Task<WriteofModel> Add(WriteofModel model)
         {
             var writeof = _mapper.Map<Writeof>(model);
+            writeof.SumAll = writeof.WriteofGoods.Sum(x => x.Count * x.Price);
             var entity = _context.Writeofs.Add(writeof);
             var balanceChange = writeof.WriteofGoods.GroupBy(w => w.GoodId)
                 .Select(w => new { GoodId = w.Key, Count = -1 * w.Sum(x => x.Count) })
@@ -62,6 +63,7 @@ namespace OnlineShop2.Api.Services
         {
             var writeof = _mapper.Map<Writeof>(model);
             writeof.SumAll = writeof.WriteofGoods.Sum(w => w.Count * w.Price);
+            writeof.LegacyId = (await _context.Writeofs.Where(x=>x.Id==model.Id).AsNoTracking().FirstAsync()).LegacyId;
             var entity = _context.Writeofs.Update(writeof);
 
             var positionsOriginal = await _context.WriteofGoods.Where(w => w.WriteofId == writeof.Id).AsNoTracking().ToListAsync();
@@ -80,7 +82,10 @@ namespace OnlineShop2.Api.Services
 
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<WriteofModel>(writeof);
+            var result = await _context.Writeofs.Include(w => w.WriteofGoods).ThenInclude(w => w.Good)
+                .Where(w => w.Id == model.Id).AsNoTracking().FirstAsync();
+
+            return _mapper.Map<WriteofModel>(_mapper.Map<WriteofModel>(result));
         }
 
         public async Task Delete(int writeofId)
@@ -123,7 +128,7 @@ namespace OnlineShop2.Api.Services
             writeofLegacy.WriteofGoods.ForEach(w => w.GoodId = goods.Find(x=>x.Id == w.GoodId).LegacyId ?? 0);
 
             if (entity.State == EntityState.Added)
-                await writeofRepositoryLegacy.AddAsync(writeofLegacy);
+                writeof.LegacyId = await writeofRepositoryLegacy.AddAsync(writeofLegacy);
             if (entity.State == EntityState.Modified)
                 await writeofRepositoryLegacy.UpdateAsync(writeofLegacy);
 
