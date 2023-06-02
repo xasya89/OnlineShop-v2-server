@@ -17,7 +17,8 @@ namespace OnlineShop2.LegacyDb.Repositories
         IShiftRepositoryLegacy ShiftRepository { get; }
         ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
         IArrivalRepositoryLegacy ArrivalRepository { get; }
-        public IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
+        IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
+        IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
     }
     public interface IGeneralRepositoryLegacy<T> where T: class
     {

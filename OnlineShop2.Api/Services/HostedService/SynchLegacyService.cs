@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using OnlineShop2.Api.Services.HostedService.SynchMethods;
 using OnlineShop2.Api.Services.Legacy;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Migrations;
@@ -59,6 +60,8 @@ namespace OnlineShop2.Api.Services.HostedService
                         return;
                     unitOfWork.SetConnectionString(constr);
 
+                    await RevaluationSynch.Synch(context, unitOfWork.RevaluationRepositoryLegacy, shop.Id);
+
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodGroupSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
@@ -66,6 +69,7 @@ namespace OnlineShop2.Api.Services.HostedService
                     await shiftSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await arrivalSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await writeofSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+
                 }
             }
             catch (Exception ex)

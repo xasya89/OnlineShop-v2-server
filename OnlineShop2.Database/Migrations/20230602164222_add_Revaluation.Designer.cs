@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OnlineShop2.Database;
@@ -11,9 +12,11 @@ using OnlineShop2.Database;
 namespace OnlineShop2.Database.Migrations
 {
     [DbContext(typeof(OnlineShopContext))]
-    partial class OnlineShopContextModelSnapshot : ModelSnapshot
+    [Migration("20230602164222_add_Revaluation")]
+    partial class add_Revaluation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -569,12 +572,6 @@ namespace OnlineShop2.Database.Migrations
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ShopId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("SumNew")
                         .HasColumnType("numeric");
 
@@ -582,8 +579,6 @@ namespace OnlineShop2.Database.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ShopId");
 
                     b.ToTable("Revaluations");
                 });
@@ -1137,17 +1132,6 @@ namespace OnlineShop2.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("OnlineShop2.Database.Models.Revaluation", b =>
-                {
-                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
-                        .WithMany()
-                        .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Shop");
-                });
-
             modelBuilder.Entity("OnlineShop2.Database.Models.RevaluationGood", b =>
                 {
                     b.HasOne("OnlineShop2.Database.Models.Good", "Good")
@@ -1157,7 +1141,7 @@ namespace OnlineShop2.Database.Migrations
                         .IsRequired();
 
                     b.HasOne("OnlineShop2.Database.Models.Revaluation", "Revaluation")
-                        .WithMany("RevaluationGoods")
+                        .WithMany()
                         .HasForeignKey("RevaluationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1290,11 +1274,6 @@ namespace OnlineShop2.Database.Migrations
                     b.Navigation("InventoryGoods");
 
                     b.Navigation("InventorySummaryGoods");
-                });
-
-            modelBuilder.Entity("OnlineShop2.Database.Models.Revaluation", b =>
-                {
-                    b.Navigation("RevaluationGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Shift", b =>

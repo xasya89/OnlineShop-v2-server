@@ -38,6 +38,9 @@ public partial class OnlineShopContext : DbContext
     public DbSet<Writeof> Writeofs { get; set; }
     public DbSet<WriteofGood> WriteofGoods { get; set; }
 
+    public DbSet<Revaluation> Revaluations { get; set; }
+    public DbSet<RevaluationGood> RevaluationGoods { get; set; }
+
     public OnlineShopContext()
     {
     }

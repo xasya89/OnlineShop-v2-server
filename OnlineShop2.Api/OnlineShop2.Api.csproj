@@ -27,4 +27,8 @@
     <ProjectReference Include="..\OnlineShop2.LegacyDb\OnlineShop2.LegacyDb.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Modules\" />
+  </ItemGroup>
+
 </Project>
