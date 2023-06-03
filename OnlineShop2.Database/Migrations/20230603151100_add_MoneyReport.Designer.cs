@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OnlineShop2.Database;
@@ -11,9 +12,11 @@ using OnlineShop2.Database;
 namespace OnlineShop2.Database.Migrations
 {
     [DbContext(typeof(OnlineShopContext))]
-    partial class OnlineShopContextModelSnapshot : ModelSnapshot
+    [Migration("20230603151100_add_MoneyReport")]
+    partial class add_MoneyReport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -553,16 +556,10 @@ namespace OnlineShop2.Database.Migrations
                     b.Property<decimal?>("InventoryGoodsSum")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("RevaluationNew")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("RevaluationOld")
-                        .HasColumnType("numeric");
-
                     b.Property<int>("ShopId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal?>("StopGoodSum")
+                    b.Property<decimal>("StartGoodsSum")
                         .HasColumnType("numeric");
 
                     b.Property<decimal?>("Writeof")

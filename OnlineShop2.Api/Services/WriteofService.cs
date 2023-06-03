@@ -18,14 +18,21 @@ namespace OnlineShop2.Api.Services
         private readonly OnlineShopContext _context;
         private readonly IMapper _mapper;
         private readonly IUnitOfWorkLegacy _unitOfWorkLegacy;
+        private readonly MoneyReportChannelService _moneyReportChannelService;
 
-        public WriteofService(ILogger<WriteofService> logger, IConfiguration configuration, OnlineShopContext context, IMapper mapper, IUnitOfWorkLegacy unitOfWorkLegacy)
+        public WriteofService(ILogger<WriteofService> logger, 
+            IConfiguration configuration, 
+            OnlineShopContext context, 
+            IMapper mapper, 
+            IUnitOfWorkLegacy unitOfWorkLegacy,
+            MoneyReportChannelService moneyReportChannelService)
         {
             _logger = logger;
             _configuration = configuration;
             _context = context;
             _mapper = mapper;
             _unitOfWorkLegacy = unitOfWorkLegacy;
+            _moneyReportChannelService = moneyReportChannelService;
         }
 
         public async Task<dynamic> GetAll(int shopId, int page=0, int count=20)
@@ -54,6 +61,9 @@ namespace OnlineShop2.Api.Services
             await modifiLegacy(entity);
 
             await _context.SaveChangesAsync();
+
+            _moneyReportChannelService.PushWriteOf(writeof.Id, writeof.DateWriteof, writeof.ShopId, writeof.SumAll);
+
             return _mapper.Map<WriteofModel>(
                 await _context.Writeofs.Include(w => w.WriteofGoods).ThenInclude(w=>w.Good).Where(w => w.Id == writeof.Id).AsNoTracking().FirstAsync()
                 );
@@ -101,7 +111,9 @@ namespace OnlineShop2.Api.Services
             var writeof = await _context.Writeofs.Where(w => w.Id == writeofId).FirstAsync();
             var entity = _context.Remove(writeof);
 
-            modifiLegacy(entity);
+            await modifiLegacy(entity);
+
+            _moneyReportChannelService.PushWriteOf(writeof.Id, writeof.DateWriteof, writeof.ShopId, -1 * writeof.SumAll);
 
             await _context.SaveChangesAsync();
         }

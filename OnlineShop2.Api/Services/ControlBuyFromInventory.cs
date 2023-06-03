@@ -42,6 +42,7 @@ namespace OnlineShop2.Api.Services
             {
                 using var scope = _service.CreateScope();
                 using var context = scope.ServiceProvider.GetRequiredService<OnlineShopContext>();
+                var moneyReportChannelService = scope.ServiceProvider.GetRequiredService<MoneyReportChannelService>();
                 var inventories = await context.Inventories
                     .Where(i => i.Status!=DocumentStatus.Successed).AsNoTracking().ToListAsync();
                 //TODO: Заменить foreach на Expression values
@@ -50,7 +51,10 @@ namespace OnlineShop2.Api.Services
                     if (inventory.Status == DocumentStatus.New || inventory.Status == DocumentStatus.Processing)
                         await calcChack(context, inventory);
                     if (inventory.Status == DocumentStatus.Processing)
+                    {
                         await calcCountDiif(context, inventory);
+                        moneyReportChannelService.PushInventory(inventory.Id, inventory.ShopId);
+                    }
 
                 };
                 await context.SaveChangesAsync();

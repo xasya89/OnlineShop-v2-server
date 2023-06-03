@@ -41,6 +41,8 @@ public partial class OnlineShopContext : DbContext
     public DbSet<Revaluation> Revaluations { get; set; }
     public DbSet<RevaluationGood> RevaluationGoods { get; set; }
 
+    public DbSet<MoneyReport> MoneyReports { get; set; }
+
     public OnlineShopContext()
     {
     }

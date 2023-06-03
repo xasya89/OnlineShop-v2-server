@@ -19,14 +19,16 @@ namespace OnlineShop2.Api.Services
         private readonly OnlineShopContext _context;
         private readonly IMapper _mapper;
         private readonly IUnitOfWorkLegacy _unitOfWorkLegacy;
+        private readonly MoneyReportChannelService _moneyReportChannelService;
 
-        public ArrivalService(ILogger<ArrivalService> logger, IConfiguration configuration, OnlineShopContext context, IMapper mapper, IUnitOfWorkLegacy unitOfWorkLegacy)
+        public ArrivalService(ILogger<ArrivalService> logger, IConfiguration configuration, OnlineShopContext context, IMapper mapper, IUnitOfWorkLegacy unitOfWorkLegacy, MoneyReportChannelService moneyReportChannelService)
         {
             _logger = logger;
             _configuration = configuration;
             _context = context;
             _mapper = mapper;
             _unitOfWorkLegacy = unitOfWorkLegacy;
+            _moneyReportChannelService = moneyReportChannelService;
         }
 
         public async Task<dynamic> GetArrivals(int page, int count, int shopId, int? supplierId)
@@ -77,6 +79,8 @@ namespace OnlineShop2.Api.Services
             foreach (var agood in arrival.ArrivalGoods)
                 model.ArrivalGoods[i++].Id = agood.Id;
 
+            _moneyReportChannelService.PushArrival(arrival.Id, arrival.DateArrival, arrival.ShopId, arrival.SaleAmount);
+
             return _mapper.Map<ArrivalModel>(arrival);
         }
 
@@ -97,6 +101,9 @@ namespace OnlineShop2.Api.Services
         public async Task Remove(int id)
         {
             _context.Remove(new Arrival { Id = id });
+
+            //TODO: Реализовать push money report
+
             await _context.SaveChangesAsync();
         }
 

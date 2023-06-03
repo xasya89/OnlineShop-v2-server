@@ -50,6 +50,7 @@ namespace OnlineShop2.Api.Services.HostedService
             using var scope = _service.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWorkLegacy>();
             using var context = scope.ServiceProvider.GetRequiredService<OnlineShopContext>();
+            var moneyReportChannelService = scope.ServiceProvider.GetRequiredService<MoneyReportChannelService>();
             try
             {
                 var shops = await context.Shops.Where(s => s.LegacyDbNum != null).ToListAsync();
@@ -66,9 +67,9 @@ namespace OnlineShop2.Api.Services.HostedService
                     await goodGroupSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
-                    await shiftSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
-                    await arrivalSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
-                    await writeofSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+                    await ShiftSynch.StartSynch(context, unitOfWork, shop.Id, moneyReportChannelService);
+                    await ArrivalSynch.StartSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
+                    await WriteOfSynch.StartSync((OnlineShopContext)context, _mapper, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
 
                 }
             }
@@ -209,189 +210,5 @@ namespace OnlineShop2.Api.Services.HostedService
             & subGood.Price == goodLegacy.Price
             & subGood.IsDeleted == goodLegacy.IsDeleted
             & subGood.VPackage == goodLegacy.VPackage;
-
-        private async Task shiftSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
-        {
-            DateOnly with = DateOnly.FromDateTime(DateTime.Now.AddDays(-1));
-            var shiftsLegacy = await unitOfWork.ShiftRepository.GetShifts(with);
-            IEnumerable<int?> shiftsLegacyId = Array.ConvertAll(shiftsLegacy.Select(s => s.Id).ToArray(), value => new int?(value));
-            var shifts = await context.Shifts.Include(s => s.CheckSells).ThenInclude(c => c.CheckGoods).Include(s => s.ShiftSummaries)
-                .Where(s => shiftsLegacyId.Contains(s.LegacyId)).AsNoTracking().ToListAsync();
-            //Получаем список товаров в чеках 
-            var goodsLegacyId = shiftsLegacy.SelectMany(s => s.CheckSells).SelectMany(c => c.CheckGoods).GroupBy(g => g.GoodId).Select(c => c.Key);
-            IEnumerable<int?> goodsLegacyIdNullable = Array.ConvertAll(goodsLegacyId.ToArray(), val => new int?(val));
-            var goods = await context.Goods.Where(g => goodsLegacyIdNullable.Contains(g.LegacyId)).AsNoTracking().ToListAsync();
-
-            var newShifts = from legacy in shiftsLegacy
-                            join shift in shifts on legacy.Id equals shift.LegacyId into t
-                            from sub in t.DefaultIfEmpty()
-                            where sub == null
-                            select new Shift
-                            {
-                                Start = legacy.Start,
-                                Stop = legacy.Stop,
-                                ShopId = shopId,
-                                Uuid = legacy.Uuid,
-                                SumAll = legacy.SumAll,
-                                SumElectron = legacy.SumElectron,
-                                SumNoElectron = legacy.SumNoElectron,
-                                SumSell = legacy.SumSell,
-                                SumDiscount = legacy.SumDiscount,
-                                SumReturnNoElectron = legacy.SumReturnNoElectron,
-                                SumReturnElectron = legacy.SumReturnElectron,
-                                LegacyId = legacy.Id,
-                                CheckSells = legacy.CheckSells.Select(c => new CheckSell
-                                {
-                                    DateCreate = c.DateCreate,
-                                    TypeSell = c.TypeSell,
-                                    SumBuy = legacy.SumAll,
-                                    SumDiscont = c.SumDiscont,
-                                    SumElectron = c.SumElectron,
-                                    SumNoElectron = c.SumCash,
-                                    LegacyId = c.Id,
-                                    CheckGoods = c.CheckGoods.Select(c => new CheckGood
-                                    {
-                                        GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
-                                        Count = c.Count,
-                                        Price = c.Price
-                                    }).ToList()
-                                }).ToList()
-                            };
-            context.AddRange(newShifts);
-
-            var editingShifts = from legacy in shiftsLegacy
-                                join shift in shifts on legacy.Id equals shift.LegacyId into t
-                                from sub in t.DefaultIfEmpty()
-                                where sub != null
-                                select new { db = sub, legacy = legacy };
-            foreach (var row in editingShifts)
-            {
-                context.Entry(row.db).State = EntityState.Unchanged;
-                var prop = context.Entry(row.db).Property(x => x.Start);
-                row.db.Stop = row.legacy.Stop;
-                row.db.SumAll = row.legacy.SumAll;
-                row.db.SumElectron = row.legacy.SumElectron;
-                row.db.SumNoElectron = row.legacy.SumNoElectron;
-                row.db.SumSell = row.legacy.SumSell;
-                row.db.SumDiscount = row.legacy.SumDiscount;
-                row.db.SumReturnNoElectron = row.legacy.SumReturnNoElectron;
-                row.db.SumReturnElectron = row.legacy.SumReturnElectron;
-            }
-
-            //Получим новые чеки
-            var checksLegacy = shiftsLegacy.Where(s => !newShifts.Any(x => x.LegacyId == s.Id)).SelectMany(s => s.CheckSells);
-            var checks = shifts.SelectMany(s => s.CheckSells).ToList();
-            var newChecks = from legacy in checksLegacy
-                            join check in checks on legacy.Id equals check.LegacyId into t
-                            from sub in t.DefaultIfEmpty()
-                            where sub == null
-                            select new CheckSell
-                            {
-                                Shift = shifts.Where(s => s.LegacyId == legacy.ShiftId).FirstOrDefault() ?? newShifts.Where(s => s.LegacyId == legacy.ShiftId).First(),
-                                DateCreate = legacy.DateCreate,
-                                TypeSell = legacy.TypeSell,
-                                SumBuy = legacy.SumAll,
-                                SumDiscont = legacy.SumDiscont,
-                                SumElectron = legacy.SumElectron,
-                                SumNoElectron = legacy.SumCash,
-                                CheckGoods = legacy.CheckGoods.Select(c => new CheckGood
-                                {
-                                    GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
-                                    Count = c.Count,
-                                    Price = c.Price
-                                }).ToList(),
-                                LegacyId = legacy.Id
-                            };
-            context.AddRange(newChecks);
-
-            await context.SaveChangesAsync();
-
-            foreach (var shift in newShifts)
-                context.Entry(shift).State = EntityState.Detached;
-            foreach (var check in newChecks)
-                context.Entry(check).State = EntityState.Detached;
-        }
-
-        private async Task arrivalSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
-        {
-            DateTime with = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
-            var laegacyArrivals = await unitOfWork.ArrivalRepository.GetArrivalWithDate(with);
-            
-            var arrivals = await context.Arrivals.Where(a => a.DateArrival >= with).ToListAsync();
-            var arrivalLegacyIds = arrivals.Select(a => a.LegacyId);
-
-            var suppliers = await context.Suppliers.AsNoTracking().ToListAsync();
-            var goods = await context.Goods.AsNoTracking().ToListAsync();
-            var newArrivals = laegacyArrivals.Where(a => !arrivalLegacyIds.Contains(a.Id)).Select(a=>
-                new Arrival
-                {
-                    Id=0,
-                    Num=a.Num,
-                    DateArrival=a.DateArrival,
-                    SupplierId = suppliers.Find(s=>s.LegacyId==a.SupplierId).Id,
-                    ShopId=shopId,
-                    Status=DocumentStatus.Successed,
-                    PurchaseAmount = a.SumArrival,
-                    SaleAmount=a.SumSell,
-                    SumNds=a.SumNds,
-                    LegacyId=a.Id,
-                    ArrivalGoods = a.ArrivalGoods.Select(x=>new ArrivalGood
-                    {
-                        Id=0,
-                        ArrivalId=0,
-                        GoodId = goods.Find(g=>g.LegacyId==x.GoodId).Id,
-                        Count=x.Count,
-                        PricePurchase=x.Price,
-                        PriceSell=x.PriceSell,
-                        Nds=NDSType.None,
-                        ExpiresDate=x.ExpiresDate
-                    }).ToList()
-                }
-            );
-            if (newArrivals.Count() == 0) return; 
-            context.Arrivals.AddRange(newArrivals);
-
-            //Увеличим кол-во
-            var changeGoodsBalance = newArrivals.SelectMany(a => a.ArrivalGoods).GroupBy(x => x.GoodId).Select(x => new { GoodId = x.Key, Count = x.Sum(x => x.Count) });
-            foreach (var change in changeGoodsBalance)
-                await context.GoodCurrentBalances
-                    .Where(x => x.GoodId == change.GoodId)
-                    .ExecuteUpdateAsync(x => x.SetProperty(x => x.CurrentCount, x => x.CurrentCount + change.Count));
-
-            await context.SaveChangesAsync();
-
-            foreach (var newArrival in newArrivals)
-                context.Entry(newArrival).State = EntityState.Detached;
-        }
-
-        private async Task writeofSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
-        {
-            DateTime with = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
-            var legacyList = _mapper.Map<IEnumerable<Writeof>> ( await unitOfWork.WriteofRepositoryLegacy.GetWriteOfWithDate(DateTime.Now));
-            var legacyInDbIds = await context.Writeofs.Where(w => w.DateWriteof >= with).AsNoTracking().Select(w=>w.LegacyId).ToListAsync();
-            
-            var legacyGoodsIds = legacyList.SelectMany(w => w.WriteofGoods).GroupBy(x => x.GoodId).Select(x => x.Key).ToList();
-            var goods = await context.Goods.Where(g => legacyGoodsIds.Contains(g.LegacyId ?? 0)).AsNoTracking().ToListAsync();
-
-            foreach(var legacy in legacyList.Where(w=>!legacyInDbIds.Contains(w.Id)))
-            {
-                legacy.LegacyId = legacy.Id;
-                legacy.Id = 0;
-                legacy.ShopId = shopId;
-                legacy.WriteofGoods.ForEach(g =>
-                {
-                    g.Id = 0;
-                    g.WriteofId = 0;
-                    g.GoodId = goods.Where(x => x.LegacyId == g.GoodId).First().Id;
-
-                    context.GoodCurrentBalances.Where(x => x.ShopId == shopId & x.GoodId == g.GoodId)
-                    .ExecuteUpdateAsync(x => x.SetProperty(x => x.CurrentCount, x => x.CurrentCount - g.Count));
-                });
-                context.Writeofs.Add(legacy);
-                
-            }
-
-            await context.SaveChangesAsync();
-        }
     }
 }

@@ -17,6 +17,7 @@ using System.Diagnostics;
 using OnlineShop2.Api.Services.HostedService;
 using OnlineShop2.Api.Extensions.MapperProfiles;
 using System.Text.Json.Serialization;
+using OnlineShop2.Api.Services.HostedService.MoneyReportMesssage;
 
 namespace OnlineShop2.Api
 {
@@ -75,6 +76,9 @@ namespace OnlineShop2.Api
             //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<SynchLegacyHostedService>();
             builder.Services.AddHostedService<ControlBuyFromInventoryBackgroundService>();
+
+            builder.Services.AddSingleton<MoneyReportChannelService>();
+            builder.Services.AddHostedService<MoneyReportHostedService>();
 
             builder.Services.AddAuthorization();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
