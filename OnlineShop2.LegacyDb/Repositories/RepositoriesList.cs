@@ -39,12 +39,6 @@ namespace OnlineShop2.LegacyDb.Repositories
         Task<IReadOnlyCollection<GoodLegacy>> AddRangeAsync(IEnumerable<GoodLegacy> entities, int shopLegacyId);
     }
 
-    public interface IShiftRepositoryLegacy
-    {
-        void SetConnectionString(string connectionString);
-        public Task<IReadOnlyCollection<ShiftLegacy>> GetShifts(DateOnly with);
-    }
-
     public interface IArrivalRepositoryLegacy : IGeneralRepositoryLegacy<ArrivalLegacy> 
     {
         Task<IEnumerable<ArrivalLegacy>> GetArrivalWithDate(DateTime with);

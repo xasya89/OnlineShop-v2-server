@@ -39,7 +39,7 @@ namespace OnlineShop2.Database.Models
         public Shift Shift { get; set; }
         public int GoodId { get; set; }
         public Good Good { get; set; }
-        public double Count { get; set; }
+        public decimal Count { get; set; }
         public decimal Sum { get; set; }
         public decimal CountReturn { get; set; }
         public decimal SumReturn { get; set; }

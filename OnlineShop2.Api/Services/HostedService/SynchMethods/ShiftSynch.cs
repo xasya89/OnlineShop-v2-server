@@ -2,117 +2,156 @@
 using OnlineShop2.Database.Models;
 using OnlineShop2.Database;
 using OnlineShop2.LegacyDb.Repositories;
+using OnlineShop2.Api.BizLogic;
 
 namespace OnlineShop2.Api.Services.HostedService.SynchMethods
 {
     internal class ShiftSynch
     {
-        public static async Task StartSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId, MoneyReportChannelService moneyReportChannelService)
+        public static async Task StartSynch(OnlineShopContext context, IShiftRepositoryLegacy shiftRepository, int shopId, MoneyReportChannelService moneyReportChannelService)
         {
-            DateOnly with = DateOnly.FromDateTime(DateTime.Now.AddDays(-1));
-            var shiftsLegacy = await unitOfWork.ShiftRepository.GetShifts(with);
-            IEnumerable<int?> shiftsLegacyId = Array.ConvertAll(shiftsLegacy.Select(s => s.Id).ToArray(), value => new int?(value));
-            var shifts = await context.Shifts.Include(s => s.CheckSells).ThenInclude(c => c.CheckGoods).Include(s => s.ShiftSummaries)
-                .Where(s => shiftsLegacyId.Contains(s.LegacyId)).AsNoTracking().ToListAsync();
-            //Получаем список товаров в чеках 
-            var goodsLegacyId = shiftsLegacy.SelectMany(s => s.CheckSells).SelectMany(c => c.CheckGoods).GroupBy(g => g.GoodId).Select(c => c.Key);
-            IEnumerable<int?> goodsLegacyIdNullable = Array.ConvertAll(goodsLegacyId.ToArray(), val => new int?(val));
-            var goods = await context.Goods.Where(g => goodsLegacyIdNullable.Contains(g.LegacyId)).AsNoTracking().ToListAsync();
-
-            var newShifts = from legacy in shiftsLegacy
-                            join shift in shifts on legacy.Id equals shift.LegacyId into t
-                            from sub in t.DefaultIfEmpty()
-                            where sub == null
-                            select new Shift
-                            {
-                                Start = legacy.Start,
-                                Stop = legacy.Stop,
-                                ShopId = shopId,
-                                Uuid = legacy.Uuid,
-                                SumAll = legacy.SumAll,
-                                SumElectron = legacy.SumElectron,
-                                SumNoElectron = legacy.SumNoElectron,
-                                SumSell = legacy.SumSell,
-                                SumDiscount = legacy.SumDiscount,
-                                SumReturnNoElectron = legacy.SumReturnNoElectron,
-                                SumReturnElectron = legacy.SumReturnElectron,
-                                LegacyId = legacy.Id,
-                                CheckSells = legacy.CheckSells.Select(c => new CheckSell
-                                {
-                                    DateCreate = c.DateCreate,
-                                    TypeSell = c.TypeSell,
-                                    SumBuy = legacy.SumAll,
-                                    SumDiscont = c.SumDiscont,
-                                    SumElectron = c.SumElectron,
-                                    SumNoElectron = c.SumCash,
-                                    LegacyId = c.Id,
-                                    CheckGoods = c.CheckGoods.Select(c => new CheckGood
-                                    {
-                                        GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
-                                        Count = c.Count,
-                                        Price = c.Price
-                                    }).ToList()
-                                }).ToList()
-                            };
-            context.AddRange(newShifts);
-
-            var editingShifts = from legacy in shiftsLegacy
-                                join shift in shifts on legacy.Id equals shift.LegacyId into t
-                                from sub in t.DefaultIfEmpty()
-                                where sub != null
-                                select new { db = sub, legacy = legacy };
-            foreach (var row in editingShifts)
+            using var tran = context.Database.BeginTransaction();
+            try
             {
-                context.Entry(row.db).State = EntityState.Unchanged;
-                var prop = context.Entry(row.db).Property(x => x.Start);
-                row.db.Stop = row.legacy.Stop;
-                row.db.SumAll = row.legacy.SumAll;
-                row.db.SumElectron = row.legacy.SumElectron;
-                row.db.SumNoElectron = row.legacy.SumNoElectron;
-                row.db.SumSell = row.legacy.SumSell;
-                row.db.SumDiscount = row.legacy.SumDiscount;
-                row.db.SumReturnNoElectron = row.legacy.SumReturnNoElectron;
-                row.db.SumReturnElectron = row.legacy.SumReturnElectron;
+                var newShifts = await analyzeStartedShifts(context, shiftRepository, shopId, moneyReportChannelService);
+                var stopedShifts = await analyzeStopedShifts(context, shiftRepository, shopId, moneyReportChannelService);
+                var newChecks = await analyzeNewChecks(context, shiftRepository, shopId, moneyReportChannelService);
+
+                await context.SaveChangesAsync();
+
+                foreach (var check in newChecks)
+                {
+                    moneyReportChannelService.PushCheckMoney(check.DateCreate, shopId, check.SumNoElectron);
+                    moneyReportChannelService.PushCheckMoney(check.DateCreate, shopId, check.SumElectron);
+                }
+
+                foreach (var shift in newShifts)
+                    context.Entry<Shift>(shift).State = EntityState.Detached;
+                foreach (var shift in stopedShifts)
+                    context.Entry<Shift>(shift).State = EntityState.Detached;
+                foreach (var check in newChecks)
+                    context.Entry<CheckSell>(check).State = EntityState.Detached;
+                foreach (var shiftSummary in context.ChangeTracker.Entries<ShiftSummary>())
+                    shiftSummary.State = EntityState.Detached;
+
+                await shiftRepository.SetProcessedComplite();
+
+                tran.Commit();
+            }
+            catch(Exception ex)
+            {
+                tran.Rollback();
+            }
+        }
+
+        private static async Task<IEnumerable<Shift>> analyzeStartedShifts(OnlineShopContext context, IShiftRepositoryLegacy shiftRepository, int shopId, MoneyReportChannelService moneyReportChannelService)
+        {
+            var newLegacyShifts = await shiftRepository.GetNewStartedShifts();
+            var newShifts = newLegacyShifts.Select(legacy => new Shift
+            {
+                Start = legacy.Start,
+                Stop = legacy.Stop,
+                ShopId = shopId,
+                Uuid = legacy.Uuid,
+                SumAll = legacy.SumAll,
+                SumElectron = legacy.SumElectron,
+                SumNoElectron = legacy.SumNoElectron,
+                SumSell = legacy.SumSell,
+                SumDiscount = legacy.SumDiscount,
+                SumReturnNoElectron = legacy.SumReturnNoElectron,
+                SumReturnElectron = legacy.SumReturnElectron,
+                LegacyId = legacy.Id,
+            });
+            context.Shifts.AddRange(newShifts);
+
+            return newShifts;
+        }
+
+        private static async Task<IEnumerable<Shift>> analyzeStopedShifts(OnlineShopContext context, IShiftRepositoryLegacy shiftRepository, int shopId, MoneyReportChannelService moneyReportChannelService)
+        {
+            var stopedLegacyShifts = await shiftRepository.GetNewStoppedShifts();
+            var stopedLegacyIds = stopedLegacyShifts.Select(x => x.Id).ToList();
+            var shifts = await context.Shifts.Where(x => stopedLegacyIds.Contains(x.LegacyId ?? 0)).ToListAsync();
+            foreach (var shift in shifts)
+            {
+                var legacy = stopedLegacyShifts.Where(x => x.Id == shift.LegacyId).First();
+                shift.Stop = legacy.Stop;
+                shift.SumAll = legacy.SumAll;
+                shift.SumElectron = legacy.SumElectron;
+                shift.SumNoElectron = legacy.SumNoElectron;
+                shift.SumSell = legacy.SumSell;
+                shift.SumDiscount = legacy.SumDiscount;
+                shift.SumReturnNoElectron = legacy.SumReturnNoElectron;
+                shift.SumReturnElectron = legacy.SumReturnElectron;
             }
 
-            //Получим новые чеки
-            var checksLegacy = shiftsLegacy.Where(s => !newShifts.Any(x => x.LegacyId == s.Id)).SelectMany(s => s.CheckSells);
-            var checks = shifts.SelectMany(s => s.CheckSells).ToList();
-            var newChecks = from legacy in checksLegacy
-                            join check in checks on legacy.Id equals check.LegacyId into t
-                            from sub in t.DefaultIfEmpty()
-                            where sub == null
-                            select new CheckSell
-                            {
-                                Shift = shifts.Where(s => s.LegacyId == legacy.ShiftId).FirstOrDefault() ?? newShifts.Where(s => s.LegacyId == legacy.ShiftId).First(),
-                                DateCreate = legacy.DateCreate,
-                                TypeSell = legacy.TypeSell,
-                                SumBuy = legacy.SumAll,
-                                SumDiscont = legacy.SumDiscont,
-                                SumElectron = legacy.SumElectron,
-                                SumNoElectron = legacy.SumCash,
-                                CheckGoods = legacy.CheckGoods.Select(c => new CheckGood
-                                {
-                                    GoodId = goods.Where(g => g.LegacyId == c.GoodId).First().Id,
-                                    Count = c.Count,
-                                    Price = c.Price
-                                }).ToList(),
-                                LegacyId = legacy.Id
-                            };
-            context.AddRange(newChecks);
+            return shifts;
+        }
 
-            foreach (var check in newChecks)
+        private static async Task<IEnumerable<CheckSell>> analyzeNewChecks(OnlineShopContext context, IShiftRepositoryLegacy shiftRepository, int shopId, MoneyReportChannelService moneyReportChannelService)
+        {
+            var newLegacyCHecks = await shiftRepository.GetNewChecks();
+            if (newLegacyCHecks?.Count() == 0)
+                return new List<CheckSell>();
+
+            var shiftsLegacyIds = newLegacyCHecks.Select(x => x.ShiftId);
+            var shifts = await context.Shifts.Where(x => shiftsLegacyIds.Contains(x.LegacyId ?? 0)).AsNoTracking().ToListAsync();
+            var goodsLegacyIds = newLegacyCHecks.SelectMany(x => x.CheckGoods).Select(x => x.GoodId).ToList();
+            var goods = await context.Goods.Where(g => goodsLegacyIds.Contains(g.LegacyId ?? 0)).AsNoTracking().ToListAsync();
+            var newChecks = newLegacyCHecks.Select(c => new CheckSell
             {
-                moneyReportChannelService.PushCheckMoney(check.DateCreate, shopId, check.SumNoElectron);
-                moneyReportChannelService.PushCheckMoney(check.DateCreate, shopId, check.SumElectron);
-            }
+                Id = 0,
+                ShiftId = shifts.Where(x => x.LegacyId == c.ShiftId).FirstOrDefault()?.Id ?? 0,
+                DateCreate = c.DateCreate,
+                TypeSell = c.TypeSell,
+                SumBuy = c.SumAll,
+                SumDiscont = c.SumDiscont,
+                SumElectron = c.SumElectron,
+                SumNoElectron = c.SumCash,
+                LegacyId = c.Id,
+                CheckGoods = c.CheckGoods.Select(cg => new CheckGood
+                {
+                    GoodId = goods.Where(g => g.LegacyId == cg.GoodId).FirstOrDefault()?.Id ?? 0,
+                    Count = cg.Count,
+                    Price = cg.Price
+                }).ToList()
+            }).ToList();
 
-            await context.SaveChangesAsync();
+            context.CheckSells.AddRange(newChecks);
 
-            foreach (var shift in newShifts)
-                context.Entry(shift).State = EntityState.Detached;
-            foreach (var check in newChecks)
-                context.Entry(check).State = EntityState.Detached;
+            var checksSummary = newChecks.GroupBy(c => c.ShiftId)
+                .Select(c => new {
+                    ShiftId = c.Key,
+                    Summaries = c.SelectMany(c => c.CheckGoods).GroupBy(c=>c.GoodId)
+                        .Select(c => new { GoodId = c.Key, Sum = c.Sum(x=>x.Price * x.Count), Count = c.Sum(x => x.Count) })
+                });
+            foreach (var summary in checksSummary)
+                foreach (var pos in summary.Summaries)
+                {
+                    var dbSummary = await context.ShiftSummaries.Where(x => x.ShiftId == summary.ShiftId & x.GoodId == pos.GoodId)
+                        .AsNoTracking().FirstOrDefaultAsync();
+                    if (dbSummary == null)
+                        context.ShiftSummaries.Add(new ShiftSummary
+                        {
+                            ShiftId = summary.ShiftId,
+                            GoodId = pos.GoodId,
+                            Count = pos.Count,
+                            Sum = pos.Sum
+                        });
+                    else
+                    {
+                        dbSummary.Count += pos.Count;
+                        dbSummary.Sum += pos.Sum;
+                    }
+                };
+
+            var balance = newChecks.SelectMany(x => x.CheckGoods).GroupBy(x => x.GoodId)
+                .ToDictionary(x => x.Key, x => x.Sum(x => x.Count));
+            await CurrentBalanceChange.Change(context, shopId, balance);
+
+            context.CheckSells.AddRange(newChecks);
+
+            return newChecks;
         }
     }
 }
