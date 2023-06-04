@@ -9,11 +9,9 @@ namespace OnlineShop2.Api.Controllers.Inventory
     [ApiController]
     public class InventoryGroupsController : ControllerBase
     {
-        private readonly SynchLegacyService _service;
         private readonly InventoryLegacyService _inventoryService;
-        public InventoryGroupsController(SynchLegacyService service, InventoryLegacyService inventoryService)
+        public InventoryGroupsController(InventoryLegacyService inventoryService)
         {
-            _service = service;
             _inventoryService = inventoryService;
         }
 

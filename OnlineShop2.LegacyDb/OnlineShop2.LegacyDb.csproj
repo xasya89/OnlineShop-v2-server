@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OnlineShop2.Database\OnlineShop2.Database.csproj" />
+    <ProjectReference Include="..\OnlineShop2.Dao\OnlineShop2.Dao.csproj" />
   </ItemGroup>
 
 </Project>

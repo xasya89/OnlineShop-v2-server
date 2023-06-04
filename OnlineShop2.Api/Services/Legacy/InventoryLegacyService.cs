@@ -195,13 +195,16 @@ namespace OnlineShop2.Api.Services.Legacy
                 throw new MyServiceException("Инвертирозация не найдена");
             if (inventory.Status == DocumentStatus.Complited)
                 throw new MyServiceException("Инвертирозация завершена");
-            var responseModel = await saveChangedGoods(inventoryId, model);
+            var inventoryGoods = _mapper.Map<IEnumerable<InventoryGood>>(model);
 
-            var transaction = await _context.Database.BeginTransactionAsync();
+            _context.InventoryGoods.AddRange(inventoryGoods.Where(i=>i.Id==0));
+            _context.InventoryGoods.UpdateRange(inventoryGoods.Where(i => i.Id != 0));
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return _mapper.Map<IEnumerable<InventoryGoodResponseModel>>(responseModel); ;
+            var goodsId = inventoryGoods.Select(g => g.Id);
+            return _mapper.Map<IEnumerable<InventoryGoodResponseModel>>(
+                await _context.InventoryGoods.Include(g => g.Good).Where(g => goodsId.Contains(g.Id)).AsNoTracking().ToListAsync()
+                );
+            
         }
         
         public async Task RemoveGroup(int groupId)
@@ -215,7 +218,8 @@ namespace OnlineShop2.Api.Services.Legacy
 
         public async Task Complite(int id, IEnumerable<InventoryAddGoodRequestModel> model)
         {
-            await saveChangedGoods(id, model);
+            _context.InventoryGoods.UpdateRange(_mapper.Map<IEnumerable<InventoryGood>>(model));
+            
             var inventory = await _context.Inventories.Where(i => i.Id == id).FirstAsync();
             if (inventoryShema == INVENTORY_SHEMA_AFTER_CLOSE)
                 inventory.Status = DocumentStatus.Processing;
@@ -281,24 +285,6 @@ namespace OnlineShop2.Api.Services.Legacy
             inventory.CashMoneyFact = model.CashMoney;
             inventory.Status = DocumentStatus.Successed;
             await _context.SaveChangesAsync();
-        }
-
-        private async Task<IEnumerable<InventoryGood>> saveChangedGoods(int inventoryId, IEnumerable<InventoryAddGoodRequestModel> model)
-        {
-            var responseModel = new List<InventoryGood>();
-            foreach (var item in model.Where(m => m.State == InventoryAddGoodRequestState.Add))
-            {
-                var newInventoryGood = new InventoryGood { InventoryGroupId = item.GroupId, GoodId = item.GoodId, CountFact = item.CountFact };
-                responseModel.Add(newInventoryGood);
-                _context.Add(newInventoryGood);
-            }
-            foreach (var item in model.Where(m => m.State == InventoryAddGoodRequestState.Edit))
-            {
-                var inventoryGood = await _context.InventoryGoods.Include(g => g.Good).Where(i => i.Id == item.id).FirstAsync();
-                inventoryGood.CountFact = item.CountFact;
-                responseModel.Add(inventoryGood);
-            }
-            return responseModel;
         }
     }
 }

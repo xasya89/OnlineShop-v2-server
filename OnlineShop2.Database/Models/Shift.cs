@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using OnlineShop2.Dao;
 
 namespace OnlineShop2.Database.Models
 {
@@ -38,7 +39,7 @@ namespace OnlineShop2.Database.Models
         public Shift Shift { get; set; }
         public int GoodId { get; set; }
         public Good Good { get; set; }
-        public double Count { get; set; }
+        public decimal Count { get; set; }
         public decimal Sum { get; set; }
         public decimal CountReturn { get; set; }
         public decimal SumReturn { get; set; }
@@ -75,11 +76,5 @@ namespace OnlineShop2.Database.Models
         public Good Good { get; set; }
         public decimal Count { get; set; }
         public decimal Price { get; set; }
-    }
-
-    public enum TypeSell
-    {
-        Sell = 0,
-        Return = 1
     }
 }

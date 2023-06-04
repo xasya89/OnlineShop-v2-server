@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,19 +18,28 @@ namespace OnlineShop2.LegacyDb.Repositories
             GoodRepository.SetConnectionString(connectionString);
             ShiftRepository.SetConnectionString(connectionString);
             CurrentBalance.SetConnectionString(connectionString);
+            ArrivalRepository.SetConnectionString(connectionString);
+            WriteofRepositoryLegacy.SetConnectionString(connectionString);
+            RevaluationRepositoryLegacy.SetConnectionString(connectionString);
         }
 
         public UnitOfWorkLegacy(ISupplierRepositoryLegacy supplier, 
             IGoodGroupRepositoryLegacy goodGroup, 
             IGoodReporitoryLegacy goodReporitory,
             IShiftRepositoryLegacy shiftRepository,
-            ICurrentBalanceRepositoryLegacy currentBalance)
+            ICurrentBalanceRepositoryLegacy currentBalance,
+            IArrivalRepositoryLegacy arrival,
+            IWriteofRepositoryLegacy writeof, 
+            IRevaluationRepositoryLegacy revaluation)
         {
             SupplierRepository= supplier;
             GoodGroupRepository = goodGroup;
             GoodRepository = goodReporitory;
             ShiftRepository = shiftRepository;
             CurrentBalance = currentBalance;
+            ArrivalRepository = arrival;
+            WriteofRepositoryLegacy = writeof;
+            RevaluationRepositoryLegacy = revaluation;
         }
 
         public ISupplierRepositoryLegacy SupplierRepository { get; }
@@ -39,5 +49,11 @@ namespace OnlineShop2.LegacyDb.Repositories
 
         public IShiftRepositoryLegacy ShiftRepository { get; }
         public ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
+
+        public IArrivalRepositoryLegacy ArrivalRepository { get; }
+
+        public IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
+
+        public IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
     }
 }

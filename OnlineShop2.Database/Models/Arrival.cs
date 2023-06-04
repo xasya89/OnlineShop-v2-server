@@ -41,9 +41,9 @@ namespace OnlineShop2.Database.Models
 
     public enum NDSType
     {
+        None,
         Percent_20,
         Percent_10,
-        Percent_0,
-        None
+        Percent_0
     }
 }

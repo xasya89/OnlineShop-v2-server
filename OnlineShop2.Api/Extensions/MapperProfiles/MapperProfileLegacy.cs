@@ -20,6 +20,13 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<GoodPrice, GoodPriceLegacy>();
             CreateMap<Barcode, BarCodeLegacy>();
             CreateMap<GoodCurrentBalance, GoodCountBalanceCurrentLegacy>();
+            CreateMap<Arrival, ArrivalLegacy>();
+            CreateMap<ArrivalGood, ArrivalGoodLegacy>();
+
+            CreateMap<WriteofLegacy, WriteofLegacy>();
+            CreateMap<WriteofGoodLegacy, WriteofGood>();
+            CreateMap<Writeof, WriteofLegacy>();
+            CreateMap<WriteofGood, WriteofGoodLegacy>();
         }
     }
 }

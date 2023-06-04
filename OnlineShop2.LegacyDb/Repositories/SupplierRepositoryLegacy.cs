@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using OnlineShop2.LegacyDb.Models;
 using System;
@@ -21,7 +20,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             using(var con = new MySqlConnection(_connStr))
             {
                 con.Open();
-                return await con.QuerySingleAsync("INSERT INTO suppliers (Name, Inn) VALUES (@Name, @Inn); SELECT LAST_INSERT_ID()", new
+                return await con.QuerySingleAsync<int>("INSERT INTO suppliers (Name, Inn) VALUES (@Name, @Inn); SELECT LAST_INSERT_ID()", new
                 {
                     Name = entity.Name, Inn=entity.Inn
                 });
@@ -61,6 +60,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             using (var con = new MySqlConnection(_connStr))
             {
                 con.Open();
+                await con.ExecuteAsync("UPDATE Goods SET SupplierId=null WHERE SupplierId=" + id);
                 await con.ExecuteAsync("DELETE FROM suppliers WHERE id = " + id);
             }
         }

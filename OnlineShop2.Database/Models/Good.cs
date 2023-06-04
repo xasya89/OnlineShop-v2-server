@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore;
+using OnlineShop2.Dao;
 
 namespace OnlineShop2.Database.Models
 {
@@ -86,36 +87,5 @@ namespace OnlineShop2.Database.Models
         public string Code { get; set; }
     }
 
-    public enum Units
-    {
-        [Display(Name = "шт")]
-        [Description("шт")]
-        PCE = 796, //штука
-        [Display(Name = "л")]
-        [Description("л")]
-        Litr = 112, //литр
-        [Display(Name = "кг")]
-        [Description("кг")]
-        KG = 166, //килограмм
-        /*
-        [Display(Name = "м")]
-        MTR =6, //метр
-        [Display(Name = "уп")]
-        NMP =778, //упаковка
-        [Display(Name = "см")]
-        CMT =4 //сантиметр
-        */
-    }
 
-    public enum SpecialTypes
-    {
-        [Display(Name = "")]
-        None,
-        [Display(Name = "Пиво")]
-        Beer,
-        [Display(Name = "Тара")]
-        Bottle,
-        [Display(Name = "Пакет")]
-        Bag
-    }
 }

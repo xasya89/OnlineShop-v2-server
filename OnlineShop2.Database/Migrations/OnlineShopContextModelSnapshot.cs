@@ -326,7 +326,7 @@ namespace OnlineShop2.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("GoodId")
+                    b.Property<int>("GoodId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Price")
@@ -521,6 +521,60 @@ namespace OnlineShop2.Database.Migrations
                     b.ToTable("InventorySummaryGoods");
                 });
 
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("ArrivalsSum")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("CashElectron")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("CashIncome")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("CashMoney")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("CashOutcome")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("Create")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("InventoryCashMoney")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("InventoryGoodsSum")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("RevaluationNew")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("RevaluationOld")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("StopGoodSum")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Writeof")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("MoneyReports");
+                });
+
             modelBuilder.Entity("OnlineShop2.Database.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -543,6 +597,81 @@ namespace OnlineShop2.Database.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.Revaluation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Create")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DocumentType")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LegacyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("SumNew")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("SumOld")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("Revaluations");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.RevaluationGood", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Count")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("GoodId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("PriceNew")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("PriceOld")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("RevaluationId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoodId");
+
+                    b.HasIndex("RevaluationId");
+
+                    b.ToTable("RevaluationGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Shift", b =>
@@ -613,8 +742,8 @@ namespace OnlineShop2.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<double>("Count")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("Count")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("CountReturn")
                         .HasColumnType("numeric");
@@ -732,6 +861,69 @@ namespace OnlineShop2.Database.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.Writeof", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateWriteof")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("LegacyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("SumAll")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("Writeofs");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.WriteofGood", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Count")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("GoodId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("WriteofId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoodId");
+
+                    b.HasIndex("WriteofId");
+
+                    b.ToTable("WriteofGoods");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Arrival", b =>
@@ -868,15 +1060,19 @@ namespace OnlineShop2.Database.Migrations
 
             modelBuilder.Entity("OnlineShop2.Database.Models.GoodPrice", b =>
                 {
-                    b.HasOne("OnlineShop2.Database.Models.Good", null)
+                    b.HasOne("OnlineShop2.Database.Models.Good", "Good")
                         .WithMany("GoodPrices")
-                        .HasForeignKey("GoodId");
+                        .HasForeignKey("GoodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
                         .WithMany()
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Good");
 
                     b.Navigation("Shop");
                 });
@@ -984,6 +1180,17 @@ namespace OnlineShop2.Database.Migrations
                     b.Navigation("Inventory");
                 });
 
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReport", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
             modelBuilder.Entity("OnlineShop2.Database.Models.RefreshToken", b =>
                 {
                     b.HasOne("OnlineShop2.Database.Models.User", "User")
@@ -993,6 +1200,36 @@ namespace OnlineShop2.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.Revaluation", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.RevaluationGood", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Good", "Good")
+                        .WithMany()
+                        .HasForeignKey("GoodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineShop2.Database.Models.Revaluation", "Revaluation")
+                        .WithMany("RevaluationGoods")
+                        .HasForeignKey("RevaluationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Good");
+
+                    b.Navigation("Revaluation");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Shift", b =>
@@ -1034,6 +1271,36 @@ namespace OnlineShop2.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.Writeof", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.WriteofGood", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Good", "Good")
+                        .WithMany()
+                        .HasForeignKey("GoodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineShop2.Database.Models.Writeof", "Writeof")
+                        .WithMany("WriteofGoods")
+                        .HasForeignKey("WriteofId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Good");
+
+                    b.Navigation("Writeof");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.Arrival", b =>
@@ -1090,6 +1357,11 @@ namespace OnlineShop2.Database.Migrations
                     b.Navigation("InventorySummaryGoods");
                 });
 
+            modelBuilder.Entity("OnlineShop2.Database.Models.Revaluation", b =>
+                {
+                    b.Navigation("RevaluationGoods");
+                });
+
             modelBuilder.Entity("OnlineShop2.Database.Models.Shift", b =>
                 {
                     b.Navigation("CheckSells");
@@ -1115,6 +1387,11 @@ namespace OnlineShop2.Database.Migrations
                     b.Navigation("Arrivals");
 
                     b.Navigation("Goods");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.Writeof", b =>
+                {
+                    b.Navigation("WriteofGoods");
                 });
 #pragma warning restore 612, 618
         }

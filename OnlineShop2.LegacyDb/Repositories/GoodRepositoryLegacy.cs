@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using MySql.Data.MySqlClient;
-using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb.Infrastructure;
 using OnlineShop2.LegacyDb.Models;
 using Org.BouncyCastle.Crypto.Tls;
 using System;
@@ -81,13 +81,37 @@ namespace OnlineShop2.LegacyDb.Repositories
                 good.Id= await AddAsync(good,shopLegacyId);
             return entities.ToList();
         }
-
+        
         public async Task DeleteAsync(int id)
         {
             using (MySqlConnection con = new MySqlConnection(_connectionString))
             {
                 con.Open();
-                await con.ExecuteAsync("DELETE FROM Goods WHERE id=" + id);
+                bool flagDelete = false;
+                int count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM arrivalgoods WHERE GoodId=" + id);
+                flagDelete = count > 0 ? flagDelete : true;
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM checkgoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM stocktakinggoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    count = await con.QuerySingleAsync<int>("SELECT COUNT(*) FROM writeofgoods WHERE GoodId=" + id);
+                    flagDelete = count > 0 ? flagDelete : true;
+                }
+                if (!flagDelete)
+                {
+                    await con.ExecuteAsync("UPDATE Goods SET IsDeleted=1 WHERE id=" + id);
+                    await con.ExecuteAsync("DELETE FROM barcodes WHERE GoodId=" + id);
+                }
+                else
+                    await con.ExecuteAsync("DELETE FROM Goods WHERE id=" + id);
             }
         }
 
@@ -132,6 +156,7 @@ namespace OnlineShop2.LegacyDb.Repositories
                 var tran = con.BeginTransaction();
                 try
                 {
+                    var goodOriginal = await con.QuerySingleAsync<GoodLegacy>("SELECT * FROM goods WHERE id=" + good.Id);
                     await con.ExecuteAsync(@"UPDATE Goods SET Name=@Name, Article=@Article, BarCode=@BarCode, Unit=@Unit, Price=@Price,
                     Uuid=@Uuid, GoodGroupId=@GoodGroupId, SupplierId=@SupplierId, SpecialType=@SpecialType, VPackage=@VPackage, IsDeleted=@IsDeleted
                     WHERE id=@Id", new
@@ -149,26 +174,39 @@ namespace OnlineShop2.LegacyDb.Repositories
                         IsDeleted = good.IsDeleted,
                         Id = good.Id
                     });
+                    if (goodOriginal.Price != good.Price)
+                    {
+                        //TODO: Добавить оформление переоценки в случае изменения цены
+                    }
+
                     var shopLegacyId = await con.QuerySingleAsync<int>("SELECT id FROM shops");
-                    foreach (var price in good.GoodPrices)
-                        if (price.Id != 0)
-                            await con.ExecuteAsync("UPDATE goodprices SET Price=@Price WHERE id=@Id", new { Id = price.Id, Price = good.Price });
-                        else
-                            price.Id = await con.QuerySingleAsync<int>(@"INSERT INTO goodprices (GoodId, ShopId, Price) VALUES (@GoodId, @ShopId, @Price); SELECT LAST_INSERT_ID()", new
+                    await con.ExecuteAsync("DELETE FROM goodprices WHERE GoodId=" + good.Id);
+                    var price = new GoodPriceLegacy { Price= good.Price, GoodId=good.Id };
+                    good.GoodPrices.Add(price);
+                    price.Id = await con.QuerySingleAsync<int>(@"INSERT INTO goodprices (GoodId, ShopId, Price) VALUES (@GoodId, @ShopId, @Price); SELECT LAST_INSERT_ID()", new
+                    {
+                        GoodId = good.Id,
+                        ShopId = shopLegacyId,
+                        Price = price.Price
+                    });
+                    await con.ExecuteAsync("DELETE FROM barcodes WHERE GoodId=" + good.Id);
+                    if (!good.IsDeleted)
+                        foreach (var barcode in good.Barcodes)
+                        {
+                            var barcodeInOtherRow = await con.QueryFirstOrDefaultAsync<string>("SELECT Code FROM barcodes WHERE Code=@Code AND GoodId<>@GoodId", new
                             {
-                                GoodId = good.Id,
-                                ShopId = shopLegacyId,
-                                Price = price.Price
+                                GoodId=good.Id,
+                                Code = barcode.Code
                             });
-                    foreach (var barcode in good.Barcodes)
-                        if (barcode.Id != 0)
-                            await con.ExecuteAsync("UPDATE barcodes SET Code=@Code WHERE id=@Id", new { Id = barcode.Id, Code = barcode.Code });
-                        else
-                            barcode.Id = await con.QuerySingleAsync<int>("INSERT INTO barcodes (GoodId, Code) VALUES (@GoodId, @Code); SELECT LAST_INSERT_ID()", new
+                            if(barcodeInOtherRow!=null)
+                                throw new MyServiceLegacyException($"Штрих код {barcodeInOtherRow} уже существует");
+;                            barcode.Id = await con.QuerySingleAsync<int>("INSERT INTO barcodes (GoodId, Code) VALUES (@GoodId, @Code); SELECT LAST_INSERT_ID()", new
                             {
                                 GoodId = good.Id,
                                 Code = barcode.Code
                             });
+                        }
+                    await tran.CommitAsync();
                 }
                 catch (MySqlException ex)
                 {

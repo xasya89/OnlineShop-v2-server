@@ -35,7 +35,7 @@ namespace OnlineShop2.Api.Models.Inventory
         public int InventoryGroupId { get; set; }
         public int GroupId { get => InventoryGroupId; }
         public int GoodId { get; set; }
-        public GoodResponseModel? Good { get; set; }
+        public Good Good { private get; set; }
         public string GoodName { get => Good?.Name ?? ""; }
         public decimal? CountFact { get; set; }
         public decimal Price { get => Good?.Price ?? 0; }

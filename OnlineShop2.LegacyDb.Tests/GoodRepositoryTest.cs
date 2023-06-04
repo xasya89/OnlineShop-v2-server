@@ -1,4 +1,4 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Dao;
 using OnlineShop2.LegacyDb.Models;
 using OnlineShop2.LegacyDb.Repositories;
 using System;

@@ -1,4 +1,4 @@
-﻿using OnlineShop2.Database.Models;
+﻿using OnlineShop2.Dao;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +62,7 @@ namespace OnlineShop2.LegacyDb.Models
         public decimal SumAll { get; set; }
         public List<CheckGoodLegacy> CheckGoods { get; set; } = new List<CheckGoodLegacy>();
         public int ShiftId { get; set; }
-        public Shift Shift { get; set; }
+        public ShiftLegacy Shift { get; set; }
     }
 
     public class CheckGoodLegacy
@@ -71,7 +71,7 @@ namespace OnlineShop2.LegacyDb.Models
         public decimal Count { get; set; }
         public decimal Price { get; set; }
         public int GoodId { get; set; }
-        public Good Good { get; set; }
+        public GoodLegacy Good { get; set; }
         public decimal Sum { get => Count * Price; }
         public int CheckSellId { get; set; }
     }

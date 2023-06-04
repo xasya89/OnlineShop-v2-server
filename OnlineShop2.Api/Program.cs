@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics;
 using OnlineShop2.Api.Services.HostedService;
 using OnlineShop2.Api.Extensions.MapperProfiles;
+using System.Text.Json.Serialization;
+using OnlineShop2.Api.Services.HostedService.MoneyReportMesssage;
 
 namespace OnlineShop2.Api
 {
@@ -44,7 +46,10 @@ namespace OnlineShop2.Api
                                   });
             });
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(optopns=>
+                optopns.JsonSerializerOptions.Converters.Add(new JsonDateTimeConverter())
+                );
+            
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -59,18 +64,21 @@ namespace OnlineShop2.Api
 
             builder.Services.AddTransient<AuthService>();
             builder.Services.AddTransient<ShopService>();
-            builder.Services.AddTransient<SynchLegacyService>();
             builder.Services.AddTransient<InventoryLegacyService>();
             builder.Services.AddTransient<GoodService>();
             builder.Services.AddTransient<GoodGroupService>();
-            builder.Services.AddTransient<GoodGroupLegacyService>();
             builder.Services.AddTransient<CurrentBalanceService>();
 
             builder.Services.AddTransient<SupplierService>();
+            builder.Services.AddTransient<ArrivalService>();
+            builder.Services.AddTransient<WriteofService>();
 
             //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<SynchLegacyHostedService>();
             builder.Services.AddHostedService<ControlBuyFromInventoryBackgroundService>();
+
+            builder.Services.AddSingleton<MoneyReportChannelService>();
+            builder.Services.AddHostedService<MoneyReportHostedService>();
 
             builder.Services.AddAuthorization();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -177,6 +185,19 @@ namespace OnlineShop2.Api
             const string KEY = "$parkI1010_ABC_444_dfdfdf!#$";   // ключ для шифрации
             public static SymmetricSecurityKey GetSymmetricSecurityKey() =>
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(KEY));
+        }
+
+        public class JsonDateTimeConverter : JsonConverter<DateTime>
+        {
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return DateTime.Parse(reader.GetString() ?? DateTime.Now.ToString("dd.MM.yyyy"));
+            }
+
+            public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString("dd.MM.yy"));
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using AutoMapper.Configuration.Annotations;
-using OnlineShop2.Database.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
