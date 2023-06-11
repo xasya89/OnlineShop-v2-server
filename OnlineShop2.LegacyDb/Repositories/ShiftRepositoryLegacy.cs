@@ -101,7 +101,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             foreach(var check in checks)
                 check.CheckGoods = checkGoods.Where(c=>c.CheckSellId == check.Id).ToList();
 
-            var docIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=1 AND Processed=0");
+            var docIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=2 AND Processed=0");
             documentHistoryIds.AddRange(docIds);
 
             return checks.ToImmutableList();

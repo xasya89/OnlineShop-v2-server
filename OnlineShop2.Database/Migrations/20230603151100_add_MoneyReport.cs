@@ -20,15 +20,18 @@ namespace OnlineShop2.Database.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ShopId = table.Column<int>(type: "integer", nullable: false),
                     Create = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    StartGoodsSum = table.Column<decimal>(type: "numeric", nullable: false),
-                    InventoryGoodsSum = table.Column<decimal>(type: "numeric", nullable: true),
-                    InventoryCashMoney = table.Column<decimal>(type: "numeric", nullable: true),
-                    ArrivalsSum = table.Column<decimal>(type: "numeric", nullable: true),
-                    CashIncome = table.Column<decimal>(type: "numeric", nullable: true),
-                    CashOutcome = table.Column<decimal>(type: "numeric", nullable: true),
-                    CashMoney = table.Column<decimal>(type: "numeric", nullable: true),
-                    CashElectron = table.Column<decimal>(type: "numeric", nullable: true),
-                    Writeof = table.Column<decimal>(type: "numeric", nullable: true)
+                    StopGoodSum = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    InventoryGoodsSum = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    InventoryCashMoney = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    ArrivalsSum = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    CashIncome = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    CashOutcome = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    CashMoney = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    CashElectron = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    RevaluationNew = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    RevaluationOld = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    MoneyItog = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m),
+                    Writeof = table.Column<decimal>(type: "numeric", nullable: false, defaultValue: 0m)
                 },
                 constraints: table =>
                 {

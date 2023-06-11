@@ -69,7 +69,11 @@ namespace OnlineShop2.Api.Services
         {
             if (model.Id != 0)
                 throw new MyServiceException("Невозможно создать повторно сущестующий документ прихода");
+            if (model.SupplierId == 0)
+                throw new MyServiceException("Не выбран поставщик");
             var arrival = _mapper.Map<Arrival>(model);
+            arrival.PurchaseAmount = arrival.ArrivalGoods.Sum(x => x.Count * x.PriceSell);
+            arrival.SaleAmount = arrival.ArrivalGoods.Sum(x => x.Count * x.PriceSell);
             var entity = _context.Add(arrival);
             await operationPriceBalanceChange(entity);
 

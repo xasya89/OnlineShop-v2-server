@@ -1,6 +1,7 @@
 ﻿using Google.Protobuf;
 using OnlineShop2.Api.Models.ReportMessage;
 using System.Threading.Channels;
+using OnlineShop2.Dao;
 
 namespace OnlineShop2.Api.Services
 {
@@ -35,14 +36,24 @@ namespace OnlineShop2.Api.Services
                 MoneyReportMessageTypeDoc.Arrival, date, shopId, id, sum
                 ));
 
-        public void PushCheckMoney(DateTime date, int shopId, decimal sum) =>
+        public void PushOpenShift(DateTime date, int shopId, int shiftId) =>
             _channel.Writer.TryWrite(new MoneyReportMessageModel(
-                MoneyReportMessageTypeDoc.CheckMoney, date, shopId, 0, sum
+                MoneyReportMessageTypeDoc.OpenShift, date, shopId, shiftId
                 ));
 
-        public void PushCheckElectron(DateTime date, int shopId, decimal sum) =>
+        public void PushCloseShift(DateTime date, int shopId, int shiftId) =>
             _channel.Writer.TryWrite(new MoneyReportMessageModel(
-                MoneyReportMessageTypeDoc.CheckElectron, date, shopId, 0, sum
+                MoneyReportMessageTypeDoc.CloseShift, date, shopId, shiftId
+                ));
+
+        public void PushCheckMoney(DateTime date, int shopId, int checkId, decimal sum) =>
+            _channel.Writer.TryWrite(new MoneyReportMessageModel(
+                MoneyReportMessageTypeDoc.CheckMoney, date, shopId, checkId, sum
+                ));
+
+        public void PushCheckElectron(DateTime date, int shopId, int checkId, decimal sum) =>
+            _channel.Writer.TryWrite(new MoneyReportMessageModel(
+                MoneyReportMessageTypeDoc.CheckElectron, date, shopId, checkId, sum
                 ));
 
         public async Task<MoneyReportMessageModel> PullAsync(CancellationToken token) =>

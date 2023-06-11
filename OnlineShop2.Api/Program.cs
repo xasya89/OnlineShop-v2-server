@@ -17,7 +17,8 @@ using System.Diagnostics;
 using OnlineShop2.Api.Services.HostedService;
 using OnlineShop2.Api.Extensions.MapperProfiles;
 using System.Text.Json.Serialization;
-using OnlineShop2.Api.Services.HostedService.MoneyReportMesssage;
+using OnlineShop2.Api.Services.HostedService.MoneyReportMesssageHostService;
+using OnlineShop2.Api.Extensions.ModelBinders;
 
 namespace OnlineShop2.Api
 {
@@ -46,8 +47,12 @@ namespace OnlineShop2.Api
                                   });
             });
 
-            builder.Services.AddControllers().AddJsonOptions(optopns=>
-                optopns.JsonSerializerOptions.Converters.Add(new JsonDateTimeConverter())
+            builder.Services.AddControllers(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new DateTimeModelBinderProvider());
+            })
+                .AddJsonOptions(optopns=>
+                    optopns.JsonSerializerOptions.Converters.Add(new JsonDateTimeConverter())
                 );
             
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -72,6 +77,8 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<SupplierService>();
             builder.Services.AddTransient<ArrivalService>();
             builder.Services.AddTransient<WriteofService>();
+
+            builder.Services.AddTransient<MoneyReportService>();
 
             //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<SynchLegacyHostedService>();

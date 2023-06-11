@@ -529,43 +529,52 @@ namespace OnlineShop2.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("ArrivalsSum")
+                    b.Property<decimal>("ArrivalsSum")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("CashElectron")
+                    b.Property<decimal>("CashElectron")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("CashIncome")
+                    b.Property<decimal>("CashIncome")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("CashMoney")
+                    b.Property<decimal>("CashMoney")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("CashOutcome")
+                    b.Property<decimal>("CashOutcome")
                         .HasColumnType("numeric");
 
                     b.Property<DateTime>("Create")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal?>("InventoryCashMoney")
+                    b.Property<decimal>("InventoryCashMoney")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("InventoryGoodsSum")
+                    b.Property<decimal>("InventoryGoodsSum")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("RevaluationNew")
+                    b.Property<decimal>("MoneyItog")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("RevaluationOld")
+                    b.Property<decimal>("RevaluationNew")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("RevaluationOld")
                         .HasColumnType("numeric");
 
                     b.Property<int>("ShopId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal?>("StopGoodSum")
+                    b.Property<decimal>("StartCashMoney")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("Writeof")
+                    b.Property<decimal>("StartGoodSum")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("StopGoodSum")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Writeof")
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
@@ -573,6 +582,42 @@ namespace OnlineShop2.Database.Migrations
                     b.HasIndex("ShopId");
 
                     b.ToTable("MoneyReports");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReportMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateRecive")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DocId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("Sum")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("TypeDoc")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("MoneyReportMessages");
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.RefreshToken", b =>
@@ -1181,6 +1226,17 @@ namespace OnlineShop2.Database.Migrations
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReport", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReportMessage", b =>
                 {
                     b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
                         .WithMany()

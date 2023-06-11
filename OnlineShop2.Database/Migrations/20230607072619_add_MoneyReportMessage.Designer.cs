@@ -12,8 +12,8 @@ using OnlineShop2.Database;
 namespace OnlineShop2.Database.Migrations
 {
     [DbContext(typeof(OnlineShopContext))]
-    [Migration("20230603170658_alter_MoneyReport_add_RevaluationSum")]
-    partial class alter_MoneyReport_add_RevaluationSum
+    [Migration("20230607072619_add_MoneyReportMessage")]
+    partial class add_MoneyReportMessage
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -578,6 +578,42 @@ namespace OnlineShop2.Database.Migrations
                     b.ToTable("MoneyReports");
                 });
 
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReportMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateRecive")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DocId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("Sum")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("TypeDoc")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("MoneyReportMessages");
+                });
+
             modelBuilder.Entity("OnlineShop2.Database.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -745,8 +781,8 @@ namespace OnlineShop2.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<double>("Count")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("Count")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("CountReturn")
                         .HasColumnType("numeric");
@@ -1184,6 +1220,17 @@ namespace OnlineShop2.Database.Migrations
                 });
 
             modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReport", b =>
+                {
+                    b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("OnlineShop2.Database.Models.MoneyReportMessage", b =>
                 {
                     b.HasOne("OnlineShop2.Database.Models.Shop", "Shop")
                         .WithMany()
