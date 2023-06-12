@@ -61,12 +61,13 @@ namespace OnlineShop2.Api.Services.HostedService
                         return;
                     unitOfWork.SetConnectionString(constr);
 
-                    await RevaluationSynch.Synch(context, unitOfWork.RevaluationRepositoryLegacy, shop.Id);
-
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodGroupSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+
+                    await StocktackingSynch.StartSynch(context, unitOfWork, shop.Id, moneyReportChannelService);
+                    await RevaluationSynch.Synch(context, unitOfWork.RevaluationRepositoryLegacy, shop.Id);
                     await ShiftSynch.StartSynch(context, unitOfWork.ShiftRepository, shop.Id, moneyReportChannelService);
                     await ArrivalSynch.StartSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
                     await WriteOfSynch.StartSync((OnlineShopContext)context, _mapper, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);

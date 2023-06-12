@@ -56,6 +56,16 @@ namespace OnlineShop2.Api.Services
                 MoneyReportMessageTypeDoc.CheckElectron, date, shopId, checkId, sum
                 ));
 
+        public void PushInventoryGoodSumLegacy(DateTime date, int shopId, decimal sum) =>
+            _channel.Writer.TryWrite(new MoneyReportMessageModel(
+                MoneyReportMessageTypeDoc.InventoryGoodSumLegacyComplite, date, shopId, 0, sum
+                ));
+
+        public void PushInventoryCashSumLegacy(DateTime date, int shopId, decimal sum) =>
+            _channel.Writer.TryWrite(new MoneyReportMessageModel(
+                MoneyReportMessageTypeDoc.InventoryCashSumLegacyComplite, date, shopId, 0, sum
+                ));
+
         public async Task<MoneyReportMessageModel> PullAsync(CancellationToken token) =>
             await _channel.Reader.ReadAsync(token);
     }

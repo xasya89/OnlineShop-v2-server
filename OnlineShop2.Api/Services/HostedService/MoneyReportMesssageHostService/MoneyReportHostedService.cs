@@ -53,6 +53,17 @@ namespace OnlineShop2.Api.Services.HostedService.MoneyReportMesssageHostService
                         report.InventoryCashMoney = inventory.CashMoneyFact ?? 0;
                     }
 
+                    if(message.TypeDoc == MoneyReportMessageTypeDoc.InventoryGoodSumLegacyComplite)
+                    {
+                        report.StartGoodSum = message.Sum ?? 0;
+                        report.InventoryGoodsSum = message.Sum ?? 0;
+                    }
+                    if (message.TypeDoc == MoneyReportMessageTypeDoc.InventoryCashSumLegacyComplite)
+                    {
+                        report.StartCashMoney = message.Sum ?? 0;
+                        report.InventoryCashMoney = message.Sum ?? 0;
+                    }
+
                     if (message.TypeDoc == MoneyReportMessageTypeDoc.Arrival)
                         report.ArrivalsSum += message.Sum ?? 0;
 

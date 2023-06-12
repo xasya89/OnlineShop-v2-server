@@ -18,6 +18,8 @@ namespace OnlineShop2.Dao
         CashIncome,
         CashOutcome,
         RevaluationOld,
-        RevaluationNew
+        RevaluationNew,
+        InventoryGoodSumLegacyComplite,
+        InventoryCashSumLegacyComplite,
     }
 }
