@@ -19,6 +19,7 @@ using OnlineShop2.Api.Extensions.MapperProfiles;
 using System.Text.Json.Serialization;
 using OnlineShop2.Api.Services.HostedService.MoneyReportMesssageHostService;
 using OnlineShop2.Api.Extensions.ModelBinders;
+using OnlineShop2.Api.Services.ReportsServices;
 
 namespace OnlineShop2.Api
 {
@@ -79,6 +80,7 @@ namespace OnlineShop2.Api
             builder.Services.AddTransient<WriteofService>();
 
             builder.Services.AddTransient<MoneyReportService>();
+            builder.Services.AddTransient<ShiftReportService>();
 
             //builder.Services.AddHostedService<ShiftSynchBackgroundService>();
             builder.Services.AddHostedService<SynchLegacyHostedService>();

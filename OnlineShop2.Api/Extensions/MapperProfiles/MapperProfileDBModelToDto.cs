@@ -4,6 +4,7 @@ using OnlineShop2.Api.Models.CurrentBalance;
 using OnlineShop2.Api.Models.Goods;
 using OnlineShop2.Api.Models.Inventory;
 using OnlineShop2.Api.Models.ReportMessage;
+using OnlineShop2.Api.Models.ReportsModels;
 using OnlineShop2.Api.Models.Shop;
 using OnlineShop2.Api.Models.Writeof;
 using OnlineShop2.Database.Models;
@@ -52,6 +53,11 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
 
             CreateMap<MoneyReportMessageModel, MoneyReportMessage>();
             CreateMap<MoneyReport, MoneyReportResponseModel>();
+
+            CreateMap<Shift, ShiftResponseModel>();
+            CreateMap<ShiftSummary, ShiftSummaryResponse>()
+                .ForMember(dto=>dto.GoodName, conf=>conf.MapFrom(x=>x.Good.Name))
+                .ForMember(dto => dto.Unit, conf => conf.MapFrom(x => x.Good.Unit));
         }
     }
 }
