@@ -16,6 +16,7 @@ namespace OnlineShop2.LegacyDb.Models
         Arrival = 3,
         WriteOf = 4,
         Revaluation = 5,
+        Stocktacking = 6,
     }
     internal enum HistoryStatus
     {

@@ -16,4 +16,8 @@
     <ProjectReference Include="..\OnlineShop2.Dao\OnlineShop2.Dao.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DBScripts\" />
+  </ItemGroup>
+
 </Project>

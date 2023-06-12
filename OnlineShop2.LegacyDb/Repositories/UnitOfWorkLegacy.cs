@@ -21,6 +21,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             ArrivalRepository.SetConnectionString(connectionString);
             WriteofRepositoryLegacy.SetConnectionString(connectionString);
             RevaluationRepositoryLegacy.SetConnectionString(connectionString);
+            StocktackingRepositoryLegacy.SetConnectionString(connectionString);
         }
 
         public UnitOfWorkLegacy(ISupplierRepositoryLegacy supplier, 
@@ -30,7 +31,8 @@ namespace OnlineShop2.LegacyDb.Repositories
             ICurrentBalanceRepositoryLegacy currentBalance,
             IArrivalRepositoryLegacy arrival,
             IWriteofRepositoryLegacy writeof, 
-            IRevaluationRepositoryLegacy revaluation)
+            IRevaluationRepositoryLegacy revaluation,
+            IStocktackingRepositoryLegacy stocktacking)
         {
             SupplierRepository= supplier;
             GoodGroupRepository = goodGroup;
@@ -40,6 +42,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             ArrivalRepository = arrival;
             WriteofRepositoryLegacy = writeof;
             RevaluationRepositoryLegacy = revaluation;
+            StocktackingRepositoryLegacy = stocktacking;
         }
 
         public ISupplierRepositoryLegacy SupplierRepository { get; }
@@ -55,5 +58,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         public IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
 
         public IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
+
+        public IStocktackingRepositoryLegacy StocktackingRepositoryLegacy { get; }
     }
 }

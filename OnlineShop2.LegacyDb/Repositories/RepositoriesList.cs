@@ -19,6 +19,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         IArrivalRepositoryLegacy ArrivalRepository { get; }
         IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
         IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
+        IStocktackingRepositoryLegacy StocktackingRepositoryLegacy { get; }
     }
     public interface IGeneralRepositoryLegacy<T> where T: class
     {
