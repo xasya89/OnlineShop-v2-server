@@ -19,7 +19,7 @@ namespace OnlineShop2.Api.Services.HostedService.MoneyReportMesssageHostService.
             if (message.TypeDoc == MoneyReportMessageTypeDoc.CheckMoney || message.TypeDoc == MoneyReportMessageTypeDoc.CheckElectron)
                 dateWithoutTime = await getDateShiftFromCheck(context, message.DocId);
             if (message.TypeDoc == MoneyReportMessageTypeDoc.CloseShift)
-                dateWithoutTime = await getDateShift(context, message.ShopId);
+                dateWithoutTime = await getDateShift(context, message.DocId);
             
 
             var report = await context.MoneyReports

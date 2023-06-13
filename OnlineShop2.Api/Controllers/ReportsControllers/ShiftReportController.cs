@@ -21,5 +21,9 @@ namespace OnlineShop2.Api.Controllers.ReportsControllers
         [HttpGet("/api/{shopId}/reports/shiftsummary/{shiftId}")]
         public async Task<IActionResult> GetSummary(int shopId, int shiftId) =>
             Ok(await _service.GetSummary(shiftId));
+
+        [HttpGet("/api/{shopId}/reports/shifts/{shiftId}")]
+        public async Task<IActionResult> GetOne(int shopId, int shiftId) =>
+            Ok(await _service.GetOne(shiftId));
     }
 }

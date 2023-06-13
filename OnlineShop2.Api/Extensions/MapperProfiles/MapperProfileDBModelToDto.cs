@@ -58,6 +58,11 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<ShiftSummary, ShiftSummaryResponse>()
                 .ForMember(dto=>dto.GoodName, conf=>conf.MapFrom(x=>x.Good.Name))
                 .ForMember(dto => dto.Unit, conf => conf.MapFrom(x => x.Good.Unit));
+            CreateMap<Shift, ShiftWithChecksResponseModel>();
+            CreateMap<CheckSell, CheckSellResponseModel>();
+            CreateMap<CheckGood, CheckGoodResponseModel>()
+                .ForMember(dto => dto.GoodName, conf => conf.MapFrom(x => x.Good.Name))
+                .ForMember(dto => dto.Unit, conf => conf.MapFrom(x => x.Good.Unit));
         }
     }
 }
