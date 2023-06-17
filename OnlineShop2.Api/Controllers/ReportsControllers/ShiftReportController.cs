@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OnlineShop2.Api.Services.ReportsServices;
+using OnlineShop2.Database;
+using OnlineShop2.Database.Models;
 
 namespace OnlineShop2.Api.Controllers.ReportsControllers
 {
@@ -9,9 +12,11 @@ namespace OnlineShop2.Api.Controllers.ReportsControllers
     public class ShiftReportController : ControllerBase
     {
         private readonly ShiftReportService _service;
-        public ShiftReportController(ShiftReportService service)
+        private readonly OnlineShopContext _context;
+        public ShiftReportController(ShiftReportService service, OnlineShopContext context)
         {
             _service = service;
+            _context = context;
         }
 
         [HttpGet("/api/{shopId}/reports/shifts")]

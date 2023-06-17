@@ -7,6 +7,21 @@ using System.Threading.Tasks;
 
 namespace OnlineShop2.LegacyDb.Repositories
 {
+    public interface IUnitOfWorkLegacy
+    {
+        void SetConnectionString(string connectionString);
+        ISupplierRepositoryLegacy SupplierRepository { get; }
+        IGoodReporitoryLegacy GoodRepository { get; }
+        IGoodGroupRepositoryLegacy GoodGroupRepository { get; }
+        IShiftRepositoryLegacy ShiftRepository { get; }
+        ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
+        IArrivalRepositoryLegacy ArrivalRepository { get; }
+        IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
+        IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
+        IStocktackingRepositoryLegacy StocktackingRepositoryLegacy { get; }
+        IMoneyReportRepositoryLegacy MoneyReportRepositoryLegacy { get; }
+    }
+
     public class UnitOfWorkLegacy : IUnitOfWorkLegacy
     {
         private string _connectionString;
@@ -22,6 +37,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             WriteofRepositoryLegacy.SetConnectionString(connectionString);
             RevaluationRepositoryLegacy.SetConnectionString(connectionString);
             StocktackingRepositoryLegacy.SetConnectionString(connectionString);
+            MoneyReportRepositoryLegacy.SetConnectionString(connectionString);
         }
 
         public UnitOfWorkLegacy(ISupplierRepositoryLegacy supplier, 
@@ -32,7 +48,8 @@ namespace OnlineShop2.LegacyDb.Repositories
             IArrivalRepositoryLegacy arrival,
             IWriteofRepositoryLegacy writeof, 
             IRevaluationRepositoryLegacy revaluation,
-            IStocktackingRepositoryLegacy stocktacking)
+            IStocktackingRepositoryLegacy stocktacking,
+            IMoneyReportRepositoryLegacy moneyReport)
         {
             SupplierRepository= supplier;
             GoodGroupRepository = goodGroup;
@@ -43,6 +60,7 @@ namespace OnlineShop2.LegacyDb.Repositories
             WriteofRepositoryLegacy = writeof;
             RevaluationRepositoryLegacy = revaluation;
             StocktackingRepositoryLegacy = stocktacking;
+            MoneyReportRepositoryLegacy = moneyReport;
         }
 
         public ISupplierRepositoryLegacy SupplierRepository { get; }
@@ -60,5 +78,7 @@ namespace OnlineShop2.LegacyDb.Repositories
         public IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
 
         public IStocktackingRepositoryLegacy StocktackingRepositoryLegacy { get; }
+
+        public IMoneyReportRepositoryLegacy MoneyReportRepositoryLegacy { get; }
     }
 }

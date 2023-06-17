@@ -15,6 +15,7 @@ namespace OnlineShop2.Api.Services.Legacy
             .AddTransient<IWriteofRepositoryLegacy, WriteofRepositoryLegacy>()
             .AddTransient<IRevaluationRepositoryLegacy, RevaluationRepositoryLegacy>()
             .AddTransient<IStocktackingRepositoryLegacy, StocktackingRepositoryLegacy>()
+            .AddTransient<IMoneyReportRepositoryLegacy, MoneyReportRepositoryLegacy>()
             .AddTransient<IUnitOfWorkLegacy, UnitOfWorkLegacy>();
     }
 }

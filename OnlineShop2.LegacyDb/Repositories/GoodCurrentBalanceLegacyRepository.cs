@@ -14,6 +14,7 @@ namespace OnlineShop2.LegacyDb.Repositories
     {
         void SetConnectionString(string connectionString);
         Task<IEnumerable<GoodCountBalanceCurrentLegacy>> GetCurrent();
+        Task<decimal> GetAllSum();
         Task SetCurrent(IEnumerable<GoodCountBalanceCurrentLegacy> balance);
         Task<bool> ShiftClosedStatus();
     }
@@ -44,6 +45,14 @@ namespace OnlineShop2.LegacyDb.Repositories
                 await con.ExecuteAsync("UPDATE goodcountbalancecurrents c INNER JOIN goods g ON c.goodId=g.id SET c.Count=0 WHERE g.IsDeleted=1");
                 await tr.CommitAsync();
             }
+        }
+
+        public async Task<decimal> GetAllSum()
+        {
+            using MySqlConnection con = new MySqlConnection(_connectionString);
+            con.Open();
+            return await con.QuerySingleAsync<decimal>("SELECT SUM(p.Price * b.Count) FROM goodcountbalancecurrents b " +
+                "INNER JOIN goodprices p ON b.GoodId=p.GoodId");
         }
 
         public async Task<bool> ShiftClosedStatus()

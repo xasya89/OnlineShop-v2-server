@@ -20,6 +20,7 @@ using System.Text.Json.Serialization;
 using OnlineShop2.Api.Services.HostedService.MoneyReportMesssageHostService;
 using OnlineShop2.Api.Extensions.ModelBinders;
 using OnlineShop2.Api.Services.ReportsServices;
+using OnlineShop2.Api.BizLogic.InitialLogic;
 
 namespace OnlineShop2.Api
 {
@@ -183,6 +184,8 @@ namespace OnlineShop2.Api
 
                 context.SaveChanges();
             };
+
+            InitialMoneyReports.StartInitial(app.Services).Wait();
 
             app.Run();
         }

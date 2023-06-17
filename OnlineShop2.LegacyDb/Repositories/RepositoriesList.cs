@@ -8,19 +8,6 @@ using System.Threading.Tasks;
 
 namespace OnlineShop2.LegacyDb.Repositories
 {
-    public interface IUnitOfWorkLegacy
-    {
-        void SetConnectionString(string connectionString);
-        ISupplierRepositoryLegacy SupplierRepository { get; }
-        IGoodReporitoryLegacy GoodRepository { get; }
-        IGoodGroupRepositoryLegacy GoodGroupRepository { get; }
-        IShiftRepositoryLegacy ShiftRepository { get; }
-        ICurrentBalanceRepositoryLegacy CurrentBalance { get; }
-        IArrivalRepositoryLegacy ArrivalRepository { get; }
-        IWriteofRepositoryLegacy WriteofRepositoryLegacy { get; }
-        IRevaluationRepositoryLegacy RevaluationRepositoryLegacy { get; }
-        IStocktackingRepositoryLegacy StocktackingRepositoryLegacy { get; }
-    }
     public interface IGeneralRepositoryLegacy<T> where T: class
     {
         void SetConnectionString(string connectionString);

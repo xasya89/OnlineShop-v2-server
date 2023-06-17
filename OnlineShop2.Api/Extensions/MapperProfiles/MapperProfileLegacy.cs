@@ -27,6 +27,8 @@ namespace OnlineShop2.Api.Extensions.MapperProfiles
             CreateMap<WriteofGoodLegacy, WriteofGood>();
             CreateMap<Writeof, WriteofLegacy>();
             CreateMap<WriteofGood, WriteofGoodLegacy>();
+
+            CreateMap<MoneyReportLegacy, MoneyReport>();
         }
     }
 }
