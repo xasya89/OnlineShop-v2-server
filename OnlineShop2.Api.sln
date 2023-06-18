@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OnlineShop2.Dao", "OnlineSh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OnlineShop2.LegacyDb", "OnlineShop2.LegacyDb\OnlineShop2.LegacyDb.csproj", "{4140401B-680F-45D6-904C-241820ECE641}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnlineShop2.LegacyDb.Tests", "OnlineShop2.LegacyDb.Tests\OnlineShop2.LegacyDb.Tests.csproj", "{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OnlineShop2.LegacyDb.Tests", "OnlineShop2.LegacyDb.Tests\OnlineShop2.LegacyDb.Tests.csproj", "{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
