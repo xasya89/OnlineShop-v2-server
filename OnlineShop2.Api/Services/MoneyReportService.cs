@@ -18,6 +18,7 @@ namespace OnlineShop2.Api.Services
         public async Task<IEnumerable<MoneyReportResponseModel>> Get(int shopId, DateTime with, DateTime by) =>
             _mapper.Map<IEnumerable<MoneyReportResponseModel>>(
                     await _context.MoneyReports.Where(x => x.ShopId == shopId & x.Create >= with & x.Create <= by)
+                .OrderByDescending(x => x.Create)
                     .AsNoTracking().ToListAsync()
                 );
     }
