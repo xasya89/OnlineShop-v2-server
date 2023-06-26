@@ -109,6 +109,48 @@ namespace OnlineShop2.Api.Services
             await _context.SaveChangesAsync();
             return _mapper.Map<GoodResponseModel>(good);
         }
+        //TODO: Пересмотреть метод. Он нужен для синхронизации из legacy
+        public async Task<GoodResponseModel> Update(int shopId, Good model, OnlineShopContext? currentContext = null)
+        {
+            currentContext = currentContext ?? _context;
+            var goodDb = await currentContext.Goods.FindAsync(model.Id);
+            if (goodDb == null) throw new MyServiceException($"Товар с id {model.Id} не найден");
+            string[] barcodes = model.Barcodes.Select(x => x.Code).ToArray();
+            var barcodesEqualsCount = await currentContext.Barcodes.Where(x => x.GoodId != model.Id & barcodes.Contains(x.Code)).CountAsync();
+            if (barcodesEqualsCount > 0)
+                throw new MyServiceException("Штрих код уже существует");
+
+            await currentContext.GoodPrices.Where(p => p.GoodId == model.Id).ExecuteDeleteAsync();
+            await currentContext.Barcodes.Where(p => p.GoodId == model.Id).ExecuteDeleteAsync();
+
+            await currentContext.GoodPrices.ForEachAsync(x => { x.Id = 0; x.GoodId = model.Id; });
+            await currentContext.Barcodes.ForEachAsync(x => { x.Id = 0; x.GoodId = model.Id; });
+
+            currentContext.Goods.Update(model);
+
+            await saveChangedLegacy(_context.Entry(model));
+            /*
+            var good = await currentContext.Goods.Include(g => g.GoodPrices).Include(g => g.Barcodes).Where(g => g.Id == model.Id).FirstOrDefaultAsync();
+            if (good == null) throw new MyServiceException($"Товар с id {model.Id} не найден");
+
+            currentContext.Entry(good).State = EntityState.Modified;
+            currentContext.ChangeEntityByDTO<GoodCreateRequestModel>(_context.Entry(good), model);
+            good.GoodPrices.ForEach(price => _context.ChangeEntityByDTO<GoodPriceCreateRequestModel>(_context.Entry(price), model.GoodPrices.Where(p => p.Id == price.Id).First()));
+            good.Barcodes.ForEach(barcode => _context.ChangeEntityByDTO<BarcodeCreateRequestModel>(_context.Entry(barcode), model.Barcodes.Where(p => p.Id == barcode.Id).First()));
+            currentContext.GoodPrices.AddRange(model.GoodPrices.Where(p => p.Id == 0).Select(p => new GoodPrice { GoodId = model.Id, ShopId = p.ShopId, Price = p.Price }));
+            var newBarcodes = model.Barcodes.Where(b => b.Id == 0 & !b.IsDeleted).Select(b => new Barcode { Good = good, Code = b.Code });
+            var countExistCode = await _context.Barcodes.Where(b => newBarcodes.Select(x => x.Code).Contains(b.Code)).CountAsync();
+            if (countExistCode > 0)
+                throw new MyServiceException("Штрих код уже существует");
+            currentContext.Barcodes.AddRange(newBarcodes);
+
+            var deletedBarcodesId = model.Barcodes.Where(b => b.Id != 0 & b.IsDeleted).Select(b => b.Id);
+            currentContext.Barcodes.RemoveRange(good.Barcodes.Where(b => deletedBarcodesId.Contains(b.Id)));
+            await saveChangedLegacy(_context.Entry(good));
+            await currentContext.SaveChangesAsync();
+            */
+            return _mapper.Map<GoodResponseModel>(model);
+        }
 
         public async Task Delete(int id)
         {

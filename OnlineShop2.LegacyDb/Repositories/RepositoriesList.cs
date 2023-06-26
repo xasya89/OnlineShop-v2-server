@@ -21,11 +21,6 @@ namespace OnlineShop2.LegacyDb.Repositories
 
     public interface ISupplierRepositoryLegacy: IGeneralRepositoryLegacy<SupplierLegacy> { }
     public interface IGoodGroupRepositoryLegacy: IGeneralRepositoryLegacy<GoodGroupLegacy> { }
-    public interface IGoodReporitoryLegacy: IGeneralRepositoryLegacy<GoodLegacy>
-    {
-        Task<int> AddAsync(GoodLegacy entity, int shopLegacyId);
-        Task<IReadOnlyCollection<GoodLegacy>> AddRangeAsync(IEnumerable<GoodLegacy> entities, int shopLegacyId);
-    }
 
     public interface IArrivalRepositoryLegacy : IGeneralRepositoryLegacy<ArrivalLegacy> 
     {

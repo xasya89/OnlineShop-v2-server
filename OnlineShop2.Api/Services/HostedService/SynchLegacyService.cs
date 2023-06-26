@@ -48,6 +48,10 @@ namespace OnlineShop2.Api.Services.HostedService
         private async void DoWork(object? state)
         {
             using var scope = _service.CreateScope();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            bool ownerGoodForShops = configuration.GetValue<bool>("OwnerGoodForShops");
+            var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+            var goodService = scope.ServiceProvider.GetRequiredService<GoodService>();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWorkLegacy>();
             using var context = scope.ServiceProvider.GetRequiredService<OnlineShopContext>();
             var moneyReportChannelService = scope.ServiceProvider.GetRequiredService<MoneyReportChannelService>();
@@ -63,8 +67,9 @@ namespace OnlineShop2.Api.Services.HostedService
 
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodGroupSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
-                    await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+                    //await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
+                    await GoodSynch.StartSynch(context, goodService, unitOfWork.GoodRepository, mapper, shop.Id, ownerGoodForShops);
 
                     await StocktackingSynch.StartSynch(context, unitOfWork, shop.Id, moneyReportChannelService);
                     await RevaluationSynch.Synch(context, unitOfWork.RevaluationRepositoryLegacy, shop.Id);
@@ -76,7 +81,7 @@ namespace OnlineShop2.Api.Services.HostedService
             }
             catch (Exception ex)
             {
-                _logger.LogError("HostedService - ShiftSynch \n" + ex.Message + "\n\n" + ex.StackTrace);
+                _logger.LogError(nameof(SynchLegacyHostedService) + " error: \n" + ex.Message + "\n\n" + ex.StackTrace);
             }
         }
 

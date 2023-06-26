@@ -13,6 +13,14 @@ using static Dapper.SqlMapper;
 
 namespace OnlineShop2.LegacyDb.Repositories
 {
+    public interface IGoodReporitoryLegacy : IGeneralRepositoryLegacy<GoodLegacy>
+    {
+        Task<int> AddAsync(GoodLegacy entity, int shopLegacyId);
+        Task<IReadOnlyCollection<GoodLegacy>> AddRangeAsync(IEnumerable<GoodLegacy> entities, int shopLegacyId);
+        Task<IEnumerable<GoodLegacy>> GetNewGoods();
+        Task<IEnumerable<GoodLegacy>> GetUpdateGoods();
+        Task SetProccessComplite();
+    }
     public class GoodRepositoryLegacy : IGoodReporitoryLegacy
     {
         private string _connectionString;
@@ -215,6 +223,60 @@ namespace OnlineShop2.LegacyDb.Repositories
                 }
 
             }
+        }
+
+        private List<int> processedDocumentsIds = new();
+        private class DocumentHistoryModel
+        {
+            public int Id { get; set; }
+            public int DocumentId { get; set; }
+        }
+        public async Task<IEnumerable<GoodLegacy>> GetNewGoods()
+        {
+            using var con = new MySqlConnection(_connectionString);
+            con.Open();
+            var documentsIds = await con.QueryAsync<DocumentHistoryModel>("SELECT id, DocumentId FROM documenthistories WHERE DocumentType=3 AND Processed=0");
+            return await getNewOrUpdateGoods(con, documentsIds);
+        }
+
+        public async Task<IEnumerable<GoodLegacy>> GetUpdateGoods()
+        {
+            using var con = new MySqlConnection(_connectionString);
+            con.Open();
+            var documentsIds = await con.QueryAsync<DocumentHistoryModel>("SELECT id, DocumentId FROM documenthistories WHERE DocumentType=4 AND Processed=0");
+            return await getNewOrUpdateGoods(con, documentsIds);
+        }
+
+        private async Task<IEnumerable<GoodLegacy>> getNewOrUpdateGoods(MySqlConnection con, IEnumerable<DocumentHistoryModel> documentsIds)
+        {
+            if (documentsIds.Count() == 0)
+                return new List<GoodLegacy>();
+            processedDocumentsIds.AddRange(documentsIds.Select(x => x.Id));
+            var goodsIds = documentsIds.Select(x => x.DocumentId);
+            var result = await con.QueryAsync<GoodLegacy>("SELECT * FROM Goods WHERE id IN @GoodsIds",
+                new { GoodsIds = goodsIds });
+
+            var barcodes = await con.QueryAsync<BarCodeLegacy>("SELECT * FROM Barcodes WHERE GoodId IN @GoodsIds",
+                new { GoodsIds = goodsIds });
+            foreach (var barcode in barcodes)
+                result.First(x => x.Id == barcode.GoodId).Barcodes.Add(barcode);
+
+            var prices = await con.QueryAsync<GoodPriceLegacy>("SELECT * FROM goodprices WHERE GoodId IN @GoodsIds",
+                new { GoodsIds = goodsIds });
+            foreach (var price in prices)
+                result.First(x => x.Id == price.GoodId).GoodPrices.Add(price);
+
+            return result;
+        }
+
+        public async Task SetProccessComplite()
+        {
+            if (processedDocumentsIds.Count() == 0)
+                return;
+            using var con = new MySqlConnection(_connectionString);
+            con.Open();
+            await con.ExecuteAsync("UPDATE documenthistories SET Processed=1 WHERE id IN @Ids", 
+                new {Ids = processedDocumentsIds });
         }
     }
 }
