@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using OnlineShop2.Database;
 using OnlineShop2.Database.Models;
+using OnlineShop2.LegacyDb.Models;
 using OnlineShop2.LegacyDb.Repositories;
+using System.Text.RegularExpressions;
 
 namespace OnlineShop2.Api.Services.HostedService.SynchMethods
 {
@@ -20,8 +22,14 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
             var transaction = context.Database.BeginTransaction();
             try
             {
-                await synchNewGood(context, goodService, reporitoryLegacy, mapper, shopId, shops);
-                await synchUpdateGoods(context, goodService, reporitoryLegacy, mapper, shopId);
+                if(await compareCountGoods(context, reporitoryLegacy))
+                    await synchAll(context, reporitoryLegacy, shopId);
+                else
+                {
+                    await synchNewGood(context, goodService, reporitoryLegacy, mapper, shopId, shops);
+                    await synchUpdateGoods(context, goodService, reporitoryLegacy, mapper, shopId);
+                }
+
                 await context.SaveChangesAsync();
                 await reporitoryLegacy.SetProccessComplite();
                 await transaction.CommitAsync();
@@ -29,9 +37,49 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
             catch (Exception ex)
             {
                 transaction.Rollback();
-                throw ex;
+                throw new Exception(nameof(GoodSynch), ex);
             }
             
+        }
+
+        private static async Task<bool> compareCountGoods(OnlineShopContext context, IGoodReporitoryLegacy repositoryLegacy)
+        {
+            var dbCount = await context.Goods.CountAsync();
+            var legacyCount = (await repositoryLegacy.GetAllAsync()).Count;
+            return dbCount < legacyCount;
+        }
+
+        private static async Task synchAll(OnlineShopContext context, IGoodReporitoryLegacy reporitoryLegacy, int shopId)
+        {
+            var goodsLegacy = await reporitoryLegacy.GetAllAsync();
+            var goods = await context.Goods.Include(x => x.GoodPrices).Include(x => x.Barcodes).AsNoTracking().ToListAsync();
+
+            var groups = await context.GoodsGroups.AsNoTracking().ToListAsync();
+            var suppliers = await context.Suppliers.AsNoTracking().ToListAsync();
+
+            var newGoods = from goodLegacy in goodsLegacy
+                           join good in goods on goodLegacy.Id equals good.LegacyId into t
+                           from subGood in t.DefaultIfEmpty()
+                           where subGood == null
+                           select new Good
+                           {
+                               ShopId = shopId,
+                               Name = goodLegacy.Name,
+                               Article = goodLegacy.Article,
+                               GoodGroupId = groups.Where(x => x.LegacyId == goodLegacy.GoodGroupId).First().Id,
+                               SupplierId = suppliers.Where(x => x.LegacyId == goodLegacy.SupplierId).FirstOrDefault()?.Id,
+                               Unit = goodLegacy.Unit,
+                               Price = goodLegacy.Price,
+                               GoodPrices = goodLegacy.GoodPrices.Select(p => new GoodPrice { Price = p.Price, ShopId = shopId }).ToList(),
+                               Barcodes = goodLegacy.Barcodes.Select(b => new Barcode { Code = b.Code ?? "1" }).ToList(),
+                               SpecialType = goodLegacy.SpecialType,
+                               VPackage = goodLegacy.VPackage,
+                               IsDeleted = goodLegacy.IsDeleted,
+                               Uuid = goodLegacy.Uuid,
+                               LegacyId = goodLegacy.Id,
+                               CurrentBalances = context.Shops.Select(s => new GoodCurrentBalance { ShopId = s.Id }).ToList()
+                           };
+            context.Goods.AddRange(newGoods);
         }
 
         private static async Task synchNewGood(OnlineShopContext context,

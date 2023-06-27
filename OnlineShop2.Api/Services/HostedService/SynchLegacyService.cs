@@ -8,6 +8,7 @@ using OnlineShop2.Database.Models;
 using OnlineShop2.LegacyDb;
 using OnlineShop2.LegacyDb.Models;
 using OnlineShop2.LegacyDb.Repositories;
+using System.Text;
 
 namespace OnlineShop2.Api.Services.HostedService
 {
@@ -59,6 +60,7 @@ namespace OnlineShop2.Api.Services.HostedService
             {
                 var shops = await context.Shops.Where(s => s.LegacyDbNum != null).ToListAsync();
                 foreach (var shop in shops)
+                    try
                 {
                     string constr = _configuration.GetConnectionString("shop" + shop.LegacyDbNum);
                     if (constr == null)
@@ -68,7 +70,6 @@ namespace OnlineShop2.Api.Services.HostedService
                     await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await goodGroupSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     //await goodSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
-                    await synchSuppliers((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id);
                     await GoodSynch.StartSynch(context, goodService, unitOfWork.GoodRepository, mapper, shop.Id, ownerGoodForShops);
 
                     await StocktackingSynch.StartSynch(context, unitOfWork, shop.Id, moneyReportChannelService);
@@ -78,6 +79,18 @@ namespace OnlineShop2.Api.Services.HostedService
                     await WriteOfSynch.StartSync((OnlineShopContext)context, _mapper, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
 
                 }
+                    catch(Exception ex)
+                    {
+                        var lines = new StringBuilder();
+                        lines.AppendLine(nameof(SynchLegacyHostedService));
+                        lines.AppendLine($"shop id {shop.Id} LegacyDbNum {shop.LegacyDbNum}");
+                        lines.AppendLine("messsage:\t" + ex.Message);
+                        lines.AppendLine();
+                        lines.AppendLine(ex.StackTrace);
+                        lines.AppendLine("----  INNER EXCEPTION -----");
+                        lines.AppendLine(ex.InnerException?.Message);
+                        _logger.LogError(lines.ToString());
+                    }
             }
             catch (Exception ex)
             {
@@ -90,37 +103,30 @@ namespace OnlineShop2.Api.Services.HostedService
 
             var suppliersLegacy = await unitOfWork.SupplierRepository.GetAllAsync();
 
-            var suppliers = await context.Suppliers.AsNoTracking().ToListAsync();
+            var suppliers = await context.Suppliers.ToListAsync();
+
             var newSuppliers = from supplierLegacy in suppliersLegacy
                                join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
                                from subSupplier in t.DefaultIfEmpty()
-            where subSupplier == null
+                               where subSupplier == null
                                select new Supplier { Name = supplierLegacy.Name, ShopId = shopId, LegacyId = supplierLegacy.Id };
             context.Suppliers.AddRange(newSuppliers);
 
             var changedSuppliers = from supplierLegacy in suppliersLegacy
-                                   join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId into t
-                                   from subSupplier in t.DefaultIfEmpty()
-                                   where subSupplier != null && subSupplier.Name != supplierLegacy.Name
-                                   select new { db = subSupplier, name = supplierLegacy.Name };
+                                   join supplier in suppliers on supplierLegacy.Id equals supplier.LegacyId 
+                                   where supplier.Name!=supplierLegacy.Name
+                                   select new { db = supplier, name = supplierLegacy.Name };
             foreach (var changeSupplier in changedSuppliers)
-            {
-                context.Entry(changeSupplier.db).State = EntityState.Modified;
                 changeSupplier.db.Name = changeSupplier.name;
-            }
 
             await context.SaveChangesAsync();
-            foreach (var supplier in newSuppliers)
-                context.Entry(supplier).State = EntityState.Detached;
-            foreach (var supplier in newSuppliers)
-                context.Entry(supplier).State = EntityState.Detached;
         }
 
         private async Task goodGroupSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)
         {
             var goodGroupsLegacy = await unitOfWork.GoodGroupRepository.GetAllAsync();
 
-            var goodGroups = await context.GoodsGroups.AsNoTracking().ToListAsync();
+            var goodGroups = await context.GoodsGroups.ToListAsync();
             var newGroups = from goodGroupLegacy in goodGroupsLegacy
                             join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId into t
                             from subGroup in t.DefaultIfEmpty()
@@ -129,21 +135,13 @@ namespace OnlineShop2.Api.Services.HostedService
             context.GoodsGroups.AddRange(newGroups);
 
             var changedGoodGroups = from goodGroupLegacy in goodGroupsLegacy
-                                    join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId into t
-                                    from subGroup in t.DefaultIfEmpty()
-                                    where subGroup != null && subGroup.Name != goodGroupLegacy.Name
-                                    select new { db = subGroup, name = goodGroupLegacy.Name };
+                                    join goodGroup in goodGroups on goodGroupLegacy.Id equals goodGroup.LegacyId
+                                    where goodGroupLegacy.Name!=goodGroup.Name
+                                    select new { db = goodGroup, name = goodGroupLegacy.Name };
             foreach (var changeGroup in changedGoodGroups)
-            {
-                context.Entry(changeGroup.db).State = EntityState.Modified;
                 changeGroup.db.Name = changeGroup.name;
-            }
-            await context.SaveChangesAsync();
 
-            foreach (var group in newGroups)
-                context.Entry(group).State = EntityState.Detached; 
-            foreach (var group in changedGoodGroups)
-                context.Entry(group).State = EntityState.Detached;
+            await context.SaveChangesAsync();
         }
 
         private async Task goodSynch(OnlineShopContext context, IUnitOfWorkLegacy unitOfWork, int shopId)

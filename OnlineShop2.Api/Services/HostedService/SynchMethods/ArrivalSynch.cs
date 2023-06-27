@@ -43,6 +43,7 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
                     }).ToList()
                 }
             );
+            if (newArrivals == null) return;
             if (newArrivals.Count() == 0) return;
             context.Arrivals.AddRange(newArrivals);
 

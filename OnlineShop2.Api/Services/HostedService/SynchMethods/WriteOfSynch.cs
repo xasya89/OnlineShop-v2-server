@@ -11,7 +11,10 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
         public static async Task StartSync(OnlineShopContext context, IMapper mapper, IUnitOfWorkLegacy unitOfWork, int shopId, MoneyReportChannelService moneyReportChannelService)
         {
             DateTime with = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue);
-            var legacyList = mapper.Map<IEnumerable<Writeof>>(await unitOfWork.WriteofRepositoryLegacy.GetWriteOfWithDate(DateTime.Now));
+            var legacyWriteofs = await unitOfWork.WriteofRepositoryLegacy.GetWriteOfWithDate(DateTime.Now);
+            if (legacyWriteofs == null)
+                return;
+            var legacyList = mapper.Map<IEnumerable<Writeof>>(legacyWriteofs);
             var legacyInDbIds = await context.Writeofs.Where(w => w.DateWriteof >= with).AsNoTracking().Select(w => w.LegacyId).ToListAsync();
 
             var legacyGoodsIds = legacyList.SelectMany(w => w.WriteofGoods).GroupBy(x => x.GoodId).Select(x => x.Key).ToList();

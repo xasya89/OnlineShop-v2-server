@@ -33,10 +33,7 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
                     moneyReportChannelService.PushOpenShift(item.Start, item.ShopId, item.Id));
 
                 foreach (var shift in stopedShifts)
-                {
-                    context.Entry<Shift>(shift).State = EntityState.Detached;
                     moneyReportChannelService.PushCloseShift(shift.Start, shift.ShopId, shift.Id);
-                }
 
                 foreach (var check in newChecks)
                 {
@@ -44,15 +41,12 @@ namespace OnlineShop2.Api.Services.HostedService.SynchMethods
                         moneyReportChannelService.PushCheckElectron(check.DateCreate, shopId, check.Id, check.SumElectron);
                     if (check.SumNoElectron > 0)
                         moneyReportChannelService.PushCheckMoney(check.DateCreate, shopId, check.Id, check.SumNoElectron);
-                    context.Entry<CheckSell>(check).State = EntityState.Detached;
                 }
-                foreach (var shiftSummary in context.ChangeTracker.Entries<ShiftSummary>())
-                    shiftSummary.State = EntityState.Detached;
             }
             catch(Exception ex)
             {
                 tran.Rollback();
-                throw ex;
+                throw new Exception(nameof(ShiftSynch), ex);
             }
         }
 
