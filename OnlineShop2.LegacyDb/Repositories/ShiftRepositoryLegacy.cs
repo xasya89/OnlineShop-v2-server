@@ -68,8 +68,8 @@ namespace OnlineShop2.LegacyDb.Repositories
                 "(SELECT DocumentId FROM documenthistories WHERE DocumentType=0 AND Processed=0) as d " +
                 "ON s.id=d.DocumentId");
 
-            var ids = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=0 AND Processed=0");
-            documentHistoryIds.AddRange(ids);
+            var historyIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=0 AND Processed=0");
+            documentHistoryIds.AddRange(historyIds);
 
             return shifts.ToImmutableList();
         }
@@ -82,8 +82,8 @@ namespace OnlineShop2.LegacyDb.Repositories
                 "(SELECT DocumentId FROM documenthistories WHERE DocumentType=1 AND Processed=0) as d " +
                 "ON s.id=d.DocumentId");
 
-            var ids = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=1 AND Processed=0");
-            documentHistoryIds.AddRange(ids);
+            var historyIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=1 AND Processed=0");
+            documentHistoryIds.AddRange(historyIds);
 
             return shifts.ToImmutableList();
         }
@@ -92,8 +92,16 @@ namespace OnlineShop2.LegacyDb.Repositories
         {
             using var con = new MySqlConnection(_connectionString);
             con.Open();
-            var checks = await con.QueryAsync<CheckSellLegacy>("SELECT c.* FROM checksells c INNER JOIN " +
-                "(SELECT DocumentId FROM documenthistories WHERE DocumentType=2 AND Processed=0) as d " +
+
+            //Проерим есть ли не обработанная закрытая или открытая смена
+            int? firstCloseShiftId = await con.QuerySingleOrDefaultAsync<int?>(
+                "SELECT MIN(id) FROM documenthistories WHERE DocumentType IN (1, 0) AND Processed=0");
+            string otherquery = "";
+            if (firstCloseShiftId is not null)
+                otherquery = " AND id<" + firstCloseShiftId;
+
+            IEnumerable<CheckSellLegacy> checks = await con.QueryAsync<CheckSellLegacy>("SELECT c.* FROM checksells c INNER JOIN " +
+                $"(SELECT DocumentId FROM documenthistories WHERE DocumentType=2 AND Processed=0 {otherquery}) as d " +
                 "ON c.id=d.DocumentId");
             var ids = checks.Select(c => c.Id).ToList();
             var checkGoods = await con.QueryAsync<CheckGoodLegacy>("SELECT * FROM checkgoods WHERE CheckSellId IN @Ids",
@@ -101,8 +109,9 @@ namespace OnlineShop2.LegacyDb.Repositories
             foreach(var check in checks)
                 check.CheckGoods = checkGoods.Where(c=>c.CheckSellId == check.Id).ToList();
 
-            var docIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=2 AND Processed=0");
-            documentHistoryIds.AddRange(docIds);
+            var historyIds = await con.QueryAsync<int>("SELECT id FROM documenthistories WHERE DocumentType=2 AND DocumentId IN @DocIds AND Processed=0",
+                new { DocIds =  ids});
+            documentHistoryIds.AddRange(historyIds);
 
             return checks.ToImmutableList();
         }

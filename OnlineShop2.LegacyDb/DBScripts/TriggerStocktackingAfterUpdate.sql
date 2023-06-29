@@ -4,10 +4,9 @@ CREATE TRIGGER shifts_AFTER_INSERT AFTER INSERT ON shifts FOR EACH ROW BEGIN
 END
 
 //1 - Закрытие смены
-CREATE TRIGGER `shop7`.`stocktakings_AFTER_UPDATE` AFTER UPDATE ON `stocktakings` FOR EACH ROW
-BEGIN
-	IF OLD.Status<>2 AND NEW.Status=2 THEN
-		INSERT INTO documenthistories (DocumentId, DocumentType, Status, Processed) VALUES (NEW.id, 6, 0, 0);
+CREATE DEFINER=`root`@`localhost` TRIGGER `shifts_AFTER_UPDATE` AFTER UPDATE ON `shifts` FOR EACH ROW BEGIN
+	IF OLD.Stop IS NULL AND NEW.Stop IS NOT NULL THEN
+		INSERT INTO documenthistories (DocumentId, DocumentType, Status) VALUES (NEW.id, 1, 0);
 	END IF;
 END
 

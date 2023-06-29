@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace OnlineShop2.LegacyDb.Models
 {
-    internal record DocumentHistoryLegacy(int Id, int DocumentId, HistoryTypeDoc DocumentType, HistoryStatus Status, bool Processed);
-    
-    internal enum HistoryTypeDoc
+    internal record DocumentHistoryLegacy(int Id, int DocumentId, HistoryTypeDocLegacy DocumentType, HistoryStatusLegacy Status, bool Processed);
+
+    internal enum HistoryTypeDocLegacy
     {
         ShiftStart = 0,
         ShiftStop = 1,
@@ -18,7 +18,7 @@ namespace OnlineShop2.LegacyDb.Models
         Revaluation = 5,
         Stocktacking = 6,
     }
-    internal enum HistoryStatus
+    internal enum HistoryStatusLegacy
     {
         New = 0,
         Update = 1,

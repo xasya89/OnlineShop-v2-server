@@ -74,7 +74,7 @@ namespace OnlineShop2.Api.Services.HostedService
 
                     await StocktackingSynch.StartSynch(context, unitOfWork, shop.Id, moneyReportChannelService);
                     await RevaluationSynch.Synch(context, unitOfWork.RevaluationRepositoryLegacy, shop.Id);
-                    await ShiftSynch.StartSynch(context, unitOfWork.ShiftRepository, shop.Id, moneyReportChannelService);
+                    await ShiftSynch.StartSynch(context, unitOfWork.ShiftRepository, shop.Id, moneyReportChannelService, _logger);
                     await ArrivalSynch.StartSynch((OnlineShopContext)context, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
                     await WriteOfSynch.StartSync((OnlineShopContext)context, _mapper, (IUnitOfWorkLegacy)unitOfWork, shop.Id, moneyReportChannelService);
 
