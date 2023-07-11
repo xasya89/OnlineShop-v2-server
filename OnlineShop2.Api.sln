@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OnlineShop2.LegacyDb", "Onl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OnlineShop2.LegacyDb.Tests", "OnlineShop2.LegacyDb.Tests\OnlineShop2.LegacyDb.Tests.csproj", "{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnlineShop2.RMK", "OnlineShop2.RMK\OnlineShop2.RMK.csproj", "{0B611B94-BA32-44C6-A2AD-70115ADD74F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E533E2D-C623-4BEA-8B4A-0AC3457927B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B611B94-BA32-44C6-A2AD-70115ADD74F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B611B94-BA32-44C6-A2AD-70115ADD74F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B611B94-BA32-44C6-A2AD-70115ADD74F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B611B94-BA32-44C6-A2AD-70115ADD74F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
